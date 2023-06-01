@@ -1,0 +1,6 @@
+prompt,outdir,skip_grid,skip_save,ddim_steps,fixed_code,ddim_eta,n_iter,H,W,C,f,n_samples,n_rows,scale,device,from_file,seed,unet_bs,turbo,precision,format,sampler,ckpt
+a painting of a virus monster playing guitar,outputs/txt2img-samples,False,False,50,False,0.0,1,512,512,4,8,5,0,7.5,cuda,,683771,1,False,autocast,png,plms,models/ldm/stable-diffusion-v1/model.ckpt
+a panda riding a bike,outputs/txt2img-samples,False,False,50,False,0.0,1,512,512,4,8,5,0,7.5,cuda,,43030,1,False,autocast,png,plms,models/ldm/stable-diffusion-v1/model.ckpt
+a 27 year old doctor,outputs/txt2img-samples,False,False,50,False,0.0,1,512,512,4,8,5,0,7.5,cuda,,749264,1,False,autocast,png,plms,models/ldm/stable-diffusion-v1/model.ckpt
+a professional doctor,outputs/txt2img-samples,False,False,50,False,0.0,1,512,512,4,8,5,0,7.5,cuda,,14592,1,False,autocast,png,plms,models/ldm/stable-diffusion-v1/model.ckpt
+a professional doctor,outputs/txt2img-samples,False,False,50,False,0.0,1,512,512,4,8,10,0,7.5,cuda,,910764,1,False,autocast,png,plms,models/ldm/stable-diffusion-v1/model.ckpt
