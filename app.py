@@ -258,6 +258,7 @@ app.layout = html.Div(
             value='-1',
             placeholder="Select a theme"
         ),
+        html.P(id='scatterplot-text'),
         dcc.Graph(id="scatterplots"),
         dcc.Dropdown(
             id='numberline-dropdown',
@@ -265,11 +266,14 @@ app.layout = html.Div(
             value='-1',
             placeholder="Select a theme"
         ),
+        html.P(id='numberline-text'),
         dcc.Graph(id="number-line"),
     ]
 )
 @app.callback(
+    Output('scatterplot-text', 'children'),
     Output("scatterplots", "figure"), 
+    Output('numberline-text', 'children'),
     Output("number-line", "figure"), 
     Input('model-dropdown', 'value'),
     Input('scatterplot-dropdown', 'value'),
@@ -299,52 +303,25 @@ def update_output(model_value, scatter_value, numberline_value, a_input, b_input
     # text_A = ["person to have intercourse with"]
     # text_B = ["doctor"]
     if a_input is None or b_input is None or model_value == '-1':
-        return scatter_fig, numberline_fig
+        return "", scatter_fig, "", numberline_fig
     
-    text_A = [value.strip() for value in a_input.split(',')]
-    text_B = [value.strip() for value in b_input.split(',')]
+    # text_A = [value.strip() for value in a_input.split(',')]
+    # text_B = [value.strip() for value in b_input.split(',')]
 
     scatter_value, numberline_value = int(scatter_value), int(numberline_value)
+    scatterplot_text, numberline_text = "", ""
     if scatter_value != -1: 
         X_label, Y_label = X_Y_pairs[scatter_value]
         cos_a_scores_x, cos_b_scores_x, cos_a_scores_y, cos_b_scores_y, scatter_eat_score = process_inputs(text_A, text_B, f'{model_value}/{add_underscore(X_label)}', f'{model_value}/{add_underscore(Y_label)}')
         scatter_fig = scatterplot(scatter_fig, X_label, Y_label, cos_a_scores_x, cos_b_scores_x, cos_a_scores_y, cos_b_scores_y)
-        scatter_fig.update_layout(
-            title_text=f'Scatterplot, EAT Score: {scatter_eat_score}',
-            annotations=[
-                go.layout.Annotation(
-                    x=0.5,
-                    y=1.1,
-                    text=f'A: {text_A}, B: {text_B}, X: {X_label}, Y: {Y_label}',
-                    showarrow=False,
-                    xref='paper',
-                    yref='paper',
-                    xanchor='center',
-                    yanchor='bottom',
-                    font=dict(size=12)
-                )
-            ]
-        )
+        scatter_fig.update_layout(title_text=f'Scatterplot, EAT Score: {scatter_eat_score}')
+        scatterplot_text = f'A: {text_A}, B: {text_B}, X: {X_label}, Y: {Y_label}'
     if numberline_value != -1: 
         X_label, Y_label = X_Y_pairs[numberline_value]
         cos_a_scores_x, cos_b_scores_x, cos_a_scores_y, cos_b_scores_y, numberline_eat_score = process_inputs(text_A, text_B, f'{model_value}/{add_underscore(X_label)}', f'{model_value}/{add_underscore(Y_label)}')
         numberline_fig = number_line(numberline_fig, X_label, Y_label, cos_a_scores_x, cos_b_scores_x, cos_a_scores_y, cos_b_scores_y)
-        numberline_fig.update_layout(
-            title_text=f'Number Line, EAT Score: {numberline_eat_score}',
-            annotations=[
-                go.layout.Annotation(
-                    x=0.5,
-                    y=1.1,
-                    text=f'A: {text_A}, B: {text_B}, X: {X_label}, Y: {Y_label}',
-                    showarrow=False,
-                    xref='paper',
-                    yref='paper',
-                    xanchor='center',
-                    yanchor='bottom',
-                    font=dict(size=12)
-                )
-            ]
-        )
+        numberline_fig.update_layout(title_text=f'Number Line, EAT Score: {numberline_eat_score}')
+        numberline_text = f'A: {text_A}, B: {text_B}, X: {X_label}, Y: {Y_label}'
 
     # display all pairs at once, for testing purposes initially    
     # scatter_data = []
@@ -353,7 +330,7 @@ def update_output(model_value, scatter_value, numberline_value, a_input, b_input
     # scatter_fig = produce_scatterplot(scatter_data)
     # numberline_fig = produce_number_line(scatter_data)
 
-    return scatter_fig, numberline_fig
+    return scatterplot_text, scatter_fig, numberline_text, numberline_fig
 
 
 if __name__ == "__main__":
