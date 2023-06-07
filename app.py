@@ -2,6 +2,7 @@ import dash
 from dash import dcc, html
 from dash.dependencies import Input, Output
 import plotly.graph_objects as go
+import dash_bootstrap_components as dbc
 
 import numpy as np
 import torch
@@ -237,38 +238,93 @@ def produce_scatterplot(data_source):
     return fig
 
 
-# TODO: add state maybe?
 app = dash.Dash()
-app.layout = html.Div(
+app.layout = app.layout = dbc.Container(
     [
-        dcc.Dropdown(
-            id='model-dropdown',
-            options=[
-                {'label': 'Stable Diffusion v1.4', 'value': 'sd'},
-                {'label': 'VQGAN + CLIP', 'value': 'vqgan'},
+        dbc.Row(
+            dcc.Dropdown(
+                id='model-dropdown',
+                options=[
+                    {'label': 'Stable Diffusion v1.4', 'value': 'sd'},
+                    {'label': 'VQGAN + CLIP', 'value': 'vqgan'},
+                ],
+                value='-1',
+                placeholder="Select a model"
+            ),
+        ),
+        dbc.Row(
+            [
+                dcc.Input(
+                    id='text-input-a', type='text', placeholder='Enter Text A', 
+                    style={
+                    'width': '100%',
+                    'padding': '6px 12px',
+                    'font-size': '14px',
+                    'line-height': '1.42857143',
+                    'color': '#555',
+                    'background-color': '#fff',
+                    'background-image': 'none',
+                    'border': '1px solid #ccc',
+                    'border-radius': '4px',
+                    'box-shadow': 'inset 0 1px 1px rgba(0,0,0,.075)',
+                    'transition': 'border-color ease-in-out .15s,box-shadow ease-in-out .15s'
+                }),
+                dcc.Input(
+                    id='text-input-b', type='text', placeholder='Enter Text B', 
+                    style={
+                    'width': '100%',
+                    'padding': '6px 12px',
+                    'font-size': '14px',
+                    'line-height': '1.42857143',
+                    'color': '#555',
+                    'background-color': '#fff',
+                    'background-image': 'none',
+                    'border': '1px solid #ccc',
+                    'border-radius': '4px',
+                    'box-shadow': 'inset 0 1px 1px rgba(0,0,0,.075)',
+                    'transition': 'border-color ease-in-out .15s,box-shadow ease-in-out .15s'
+                }),
             ],
-            value='-1',
-            placeholder="Select a model"
+            style={'width': '100%', 'display': 'flex', 'align-items': 'center', 'justify-content': 'space-between'}
         ),
-        dcc.Input(id='text-input-a', type='text', placeholder='Enter Text A'),
-        dcc.Input(id='text-input-b', type='text', placeholder='Enter Text B'),
-        dcc.Dropdown(
-            id='scatterplot-dropdown',
-            options=options_menu,
-            value='-1',
-            placeholder="Select a theme"
+        dbc.Row(
+            [
+                dbc.Col(
+                    [
+                        dcc.Dropdown(
+                            id='scatterplot-dropdown',
+                            options=options_menu,
+                            value='-1',
+                            placeholder="Select a theme",
+                        ),
+                        html.P(id='scatterplot-text', style={'white-space': 'pre-line'}),
+                    ],
+                    style={'width': '25%'}
+                ),
+                dcc.Graph(id="scatterplots", style={'width': '75%'})
+            ],
+            style={'width': '100%', 'display': 'flex', 'align-items': 'center', 'justify-content': 'center'}
         ),
-        html.P(id='scatterplot-text'),
-        dcc.Graph(id="scatterplots"),
-        dcc.Dropdown(
-            id='numberline-dropdown',
-            options=options_menu,
-            value='-1',
-            placeholder="Select a theme"
+        dbc.Row(
+            [
+                dbc.Col(
+                    [
+                        dcc.Dropdown(
+                            id='numberline-dropdown',
+                            options=options_menu,
+                            value='-1',
+                            placeholder="Select a theme"
+                        ),
+                        html.P(id='numberline-text', style={'white-space': 'pre-line'}),
+                    ],
+                    style={'width': '25%'}
+                ),
+                dcc.Graph(id="number-line", style={'width': '75%'}),
+            ],
+            style={'width': '100%', 'display': 'flex', 'align-items': 'center', 'justify-content': 'center'}
         ),
-        html.P(id='numberline-text'),
-        dcc.Graph(id="number-line"),
-    ]
+    ],
+    fluid=True
 )
 @app.callback(
     Output('scatterplot-text', 'children'),
@@ -305,8 +361,8 @@ def update_output(model_value, scatter_value, numberline_value, a_input, b_input
     if a_input is None or b_input is None or model_value == '-1':
         return "", scatter_fig, "", numberline_fig
     
-    # text_A = [value.strip() for value in a_input.split(',')]
-    # text_B = [value.strip() for value in b_input.split(',')]
+    text_A = [value.strip() for value in a_input.split(',')]
+    text_B = [value.strip() for value in b_input.split(',')]
 
     scatter_value, numberline_value = int(scatter_value), int(numberline_value)
     scatterplot_text, numberline_text = "", ""
@@ -315,13 +371,13 @@ def update_output(model_value, scatter_value, numberline_value, a_input, b_input
         cos_a_scores_x, cos_b_scores_x, cos_a_scores_y, cos_b_scores_y, scatter_eat_score = process_inputs(text_A, text_B, f'{model_value}/{add_underscore(X_label)}', f'{model_value}/{add_underscore(Y_label)}')
         scatter_fig = scatterplot(scatter_fig, X_label, Y_label, cos_a_scores_x, cos_b_scores_x, cos_a_scores_y, cos_b_scores_y)
         scatter_fig.update_layout(title_text=f'Scatterplot, EAT Score: {scatter_eat_score}')
-        scatterplot_text = f'A: {text_A}, B: {text_B}, X: {X_label}, Y: {Y_label}'
+        scatterplot_text = f'A: {text_A}\nB: {text_B}\nX: {X_label}\nY: {Y_label}'
     if numberline_value != -1: 
         X_label, Y_label = X_Y_pairs[numberline_value]
         cos_a_scores_x, cos_b_scores_x, cos_a_scores_y, cos_b_scores_y, numberline_eat_score = process_inputs(text_A, text_B, f'{model_value}/{add_underscore(X_label)}', f'{model_value}/{add_underscore(Y_label)}')
         numberline_fig = number_line(numberline_fig, X_label, Y_label, cos_a_scores_x, cos_b_scores_x, cos_a_scores_y, cos_b_scores_y)
         numberline_fig.update_layout(title_text=f'Number Line, EAT Score: {numberline_eat_score}')
-        numberline_text = f'A: {text_A}, B: {text_B}, X: {X_label}, Y: {Y_label}'
+        numberline_text = f'A: {text_A}\nB: {text_B}\nX: {X_label}\nY: {Y_label}'
 
     # display all pairs at once, for testing purposes initially    
     # scatter_data = []
