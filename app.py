@@ -4,6 +4,8 @@ from dash.dependencies import Input, Output
 import plotly.graph_objects as go
 import dash_bootstrap_components as dbc
 
+import base64
+import os
 import numpy as np
 import torch
 from CLIP import clip
@@ -238,6 +240,23 @@ def produce_scatterplot(data_source):
     return fig
 
 
+def save_uploaded_images(contents, directory):
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
+    for i in range(len(contents)):
+        content = contents[i]
+
+        # Get the image data
+        _, content_string = content.split(',')
+
+        # Decode and save the image locally
+        decoded_image = base64.b64decode(content_string)
+        image_filename = os.path.join(f'{directory}', f'{i}.png')
+        with open(image_filename, 'wb') as f:
+            f.write(decoded_image)
+
+
 app = dash.Dash()
 app.layout = app.layout = dbc.Container(
     [
@@ -323,6 +342,57 @@ app.layout = app.layout = dbc.Container(
             ],
             style={'width': '100%', 'display': 'flex', 'align-items': 'center', 'justify-content': 'center'}
         ),
+        dbc.Row(
+            [
+                dbc.Col(
+                    [
+                        dcc.Upload(
+                            id='upload-image-x',
+                            children=html.Div([
+                                'For X, Drag and Drop or ',
+                                html.A('Select Images')
+                            ]),
+                            style={
+                                'width': '100%',
+                                'height': '60px',
+                                'lineHeight': '60px',
+                                'borderWidth': '1px',
+                                'borderStyle': 'dashed',
+                                'borderRadius': '5px',
+                                'textAlign': 'center',
+                                'margin': '10px'
+                            },
+                            multiple=True
+                        ),
+                        html.Div(id='output-images-x')
+                    ]
+                ),
+                dbc.Col(
+                    [
+                        dcc.Upload(
+                            id='upload-image-y',
+                            children=html.Div([
+                                'For Y, Drag and Drop or ',
+                                html.A('Select Images')
+                            ]),
+                            style={
+                                'width': '100%',
+                                'height': '60px',
+                                'lineHeight': '60px',
+                                'borderWidth': '1px',
+                                'borderStyle': 'dashed',
+                                'borderRadius': '5px',
+                                'textAlign': 'center',
+                                'margin': '10px'
+                            },
+                            multiple=True
+                        ),
+                        html.Div(id='output-images-y')
+                    ]
+                )
+            ],
+            style={'width': '100%', 'display': 'flex', 'align-items': 'center', 'justify-content': 'center'}
+        ),
     ],
     fluid=True
 )
@@ -331,13 +401,19 @@ app.layout = app.layout = dbc.Container(
     Output("scatterplots", "figure"), 
     Output('numberline-text', 'children'),
     Output("number-line", "figure"), 
+    Output('output-images-x', 'children'),
+    Output('output-images-y', 'children'),
     Input('model-dropdown', 'value'),
     Input('scatterplot-dropdown', 'value'),
     Input('numberline-dropdown', 'value'),
     Input('text-input-a', 'value'),
     Input('text-input-b', 'value'),
+    Input('upload-image-x', 'contents'),
+    Input('upload-image-y', 'contents'),
+    # prevent_initial_call=True
 )
-def update_output(model_value, scatter_value, numberline_value, a_input, b_input):
+def update_output(model_value, scatter_value, numberline_value, a_input, b_input, x_contents, y_contents):
+    # TODO: add upload as a model option, integrate with scatterplots, maybe use states for rendering
     scatter_fig, numberline_fig = go.Figure(), go.Figure()
     # default
     scatter_fig.update_layout(
@@ -359,7 +435,7 @@ def update_output(model_value, scatter_value, numberline_value, a_input, b_input
     # text_A = ["person to have intercourse with"]
     # text_B = ["doctor"]
     if a_input is None or b_input is None or model_value == '-1':
-        return "", scatter_fig, "", numberline_fig
+        return "", scatter_fig, "", numberline_fig, html.Div(), html.Div()
     
     text_A = [value.strip() for value in a_input.split(',')]
     text_B = [value.strip() for value in b_input.split(',')]
@@ -379,14 +455,12 @@ def update_output(model_value, scatter_value, numberline_value, a_input, b_input
         numberline_fig.update_layout(title_text=f'Number Line, EAT Score: {numberline_eat_score}')
         numberline_text = f'A: {text_A}\nB: {text_B}\nX: {X_label}\nY: {Y_label}'
 
-    # display all pairs at once, for testing purposes initially    
-    # scatter_data = []
-    # for X_dir_name, Y_dir_name in X_Y_pairs:
-    #     scatter_data.append(process_inputs(text_A, text_B, f'{model_value}/{add_underscore(X_dir_name)}', f'{model_value}/{add_underscore(Y_dir_name)}'))
-    # scatter_fig = produce_scatterplot(scatter_data)
-    # numberline_fig = produce_number_line(scatter_data)
-
-    return scatterplot_text, scatter_fig, numberline_text, numberline_fig
+    if x_contents is not None and y_contents is not None:
+        save_uploaded_images(x_contents, 'upload/X')
+        save_uploaded_images(y_contents, 'upload/Y')
+        return scatterplot_text, scatter_fig, numberline_text, numberline_fig, html.Div("Images saved successfully."), html.Div("Images saved successfully.")
+    else: 
+        return scatterplot_text, scatter_fig, numberline_text, numberline_fig, html.Div(), html.Div()
 
 
 if __name__ == "__main__":
