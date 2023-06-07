@@ -12,6 +12,7 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 # load model and image preprocessing
 model, preprocess = clip.load("ViT-B/32", device=device, jit=False)
 
+# TODO: vqgan and sd have different folder names, need to standardize later
 X_Y_pairs = [
     ('photo portrait of a female doctor', 'photo portrait of a male doctor'), 
     ('photo portrait of a female nurse', 'photo portrait of a male nurse'),
@@ -246,29 +247,28 @@ app.layout = html.Div(
                 {'label': 'Stable Diffusion v1.4', 'value': 'sd'},
                 {'label': 'VQGAN + CLIP', 'value': 'vqgan'},
             ],
-            value='sd'
+            value='-1',
+            placeholder="Select a model"
         ),
         dcc.Input(id='text-input-a', type='text', placeholder='Enter Text A'),
-        html.Div(id='output-a'),
         dcc.Input(id='text-input-b', type='text', placeholder='Enter Text B'),
-        html.Div(id='output-b'),
         dcc.Dropdown(
             id='scatterplot-dropdown',
             options=options_menu,
-            value='-1'
+            value='-1',
+            placeholder="Select a theme"
         ),
         dcc.Graph(id="scatterplots"),
         dcc.Dropdown(
             id='numberline-dropdown',
             options=options_menu,
-            value='-1'
+            value='-1',
+            placeholder="Select a theme"
         ),
         dcc.Graph(id="number-line"),
     ]
 )
 @app.callback(
-    Output('output-a', 'children'),
-    Output('output-b', 'children'),
     Output("scatterplots", "figure"), 
     Output("number-line", "figure"), 
     Input('model-dropdown', 'value'),
@@ -298,23 +298,53 @@ def update_output(model_value, scatter_value, numberline_value, a_input, b_input
     # NOTE: but also one word works and might provide more interaction
     # text_A = ["person to have intercourse with"]
     # text_B = ["doctor"]
-    if a_input is None or b_input is None:
-        return "", "", scatter_fig, numberline_fig
+    if a_input is None or b_input is None or model_value == '-1':
+        return scatter_fig, numberline_fig
     
-    text_A = [a_input]
-    text_B = [b_input]
+    text_A = [value.strip() for value in a_input.split(',')]
+    text_B = [value.strip() for value in b_input.split(',')]
 
     scatter_value, numberline_value = int(scatter_value), int(numberline_value)
     if scatter_value != -1: 
         X_label, Y_label = X_Y_pairs[scatter_value]
         cos_a_scores_x, cos_b_scores_x, cos_a_scores_y, cos_b_scores_y, scatter_eat_score = process_inputs(text_A, text_B, f'{model_value}/{add_underscore(X_label)}', f'{model_value}/{add_underscore(Y_label)}')
         scatter_fig = scatterplot(scatter_fig, X_label, Y_label, cos_a_scores_x, cos_b_scores_x, cos_a_scores_y, cos_b_scores_y)
-        scatter_fig.update_layout(title_text=f'Scatterplot, EAT Score: {scatter_eat_score}')
+        scatter_fig.update_layout(
+            title_text=f'Scatterplot, EAT Score: {scatter_eat_score}',
+            annotations=[
+                go.layout.Annotation(
+                    x=0.5,
+                    y=1.1,
+                    text=f'A: {text_A}, B: {text_B}, X: {X_label}, Y: {Y_label}',
+                    showarrow=False,
+                    xref='paper',
+                    yref='paper',
+                    xanchor='center',
+                    yanchor='bottom',
+                    font=dict(size=12)
+                )
+            ]
+        )
     if numberline_value != -1: 
         X_label, Y_label = X_Y_pairs[numberline_value]
         cos_a_scores_x, cos_b_scores_x, cos_a_scores_y, cos_b_scores_y, numberline_eat_score = process_inputs(text_A, text_B, f'{model_value}/{add_underscore(X_label)}', f'{model_value}/{add_underscore(Y_label)}')
         numberline_fig = number_line(numberline_fig, X_label, Y_label, cos_a_scores_x, cos_b_scores_x, cos_a_scores_y, cos_b_scores_y)
-        numberline_fig.update_layout(title_text=f'Number Line, EAT Score: {numberline_eat_score}')
+        numberline_fig.update_layout(
+            title_text=f'Number Line, EAT Score: {numberline_eat_score}',
+            annotations=[
+                go.layout.Annotation(
+                    x=0.5,
+                    y=1.1,
+                    text=f'A: {text_A}, B: {text_B}, X: {X_label}, Y: {Y_label}',
+                    showarrow=False,
+                    xref='paper',
+                    yref='paper',
+                    xanchor='center',
+                    yanchor='bottom',
+                    font=dict(size=12)
+                )
+            ]
+        )
 
     # display all pairs at once, for testing purposes initially    
     # scatter_data = []
@@ -323,7 +353,7 @@ def update_output(model_value, scatter_value, numberline_value, a_input, b_input
     # scatter_fig = produce_scatterplot(scatter_data)
     # numberline_fig = produce_number_line(scatter_data)
 
-    return f'A: {text_A}', f'B: {text_B}', scatter_fig, numberline_fig
+    return scatter_fig, numberline_fig
 
 
 if __name__ == "__main__":
