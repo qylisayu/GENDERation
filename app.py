@@ -6,6 +6,8 @@ import dash_bootstrap_components as dbc
 
 import base64
 import os
+import shutil
+import atexit
 import numpy as np
 import torch
 from CLIP import clip
@@ -243,6 +245,9 @@ def produce_scatterplot(data_source):
 def save_uploaded_images(contents, directory):
     if not os.path.exists(directory):
         os.makedirs(directory)
+    else:   # account for reupload case, where old number of images > new number of images
+        shutil.rmtree(directory)
+        os.makedirs(directory)
 
     for i in range(len(contents)):
         content = contents[i]
@@ -448,7 +453,7 @@ def update_output(model_value, scatter_value, numberline_value, a_input, b_input
     
     text_A = [value.strip() for value in a_input.split(',')]
     text_B = [value.strip() for value in b_input.split(',')]
-
+    
     if x_contents is not None and y_contents is not None and model_value == 'upload':
         scatterplot_dropdown_style = {'display': 'none'}
         numberline_dropdown_style = {'display': 'none'}
@@ -456,18 +461,19 @@ def update_output(model_value, scatter_value, numberline_value, a_input, b_input
         x_filenames = [filename for filename in x_filenames]
         y_filenames = [filename for filename in y_filenames]
 
-        save_uploaded_images(x_contents, 'upload/X')
-        save_uploaded_images(y_contents, 'upload/Y')
-
         X_label, Y_label = 'X', 'Y'
-        cos_a_scores_x, cos_b_scores_x, cos_a_scores_y, cos_b_scores_y, scatter_eat_score = process_inputs(text_A, text_B, f'{model_value}/{X_label}', f'{model_value}/{Y_label}')
+        X_dir_name, Y_dir_name =  f'{model_value}/{X_label}', f'{model_value}/{Y_label}'
+        save_uploaded_images(x_contents, X_dir_name)
+        save_uploaded_images(y_contents, Y_dir_name)
+
+        cos_a_scores_x, cos_b_scores_x, cos_a_scores_y, cos_b_scores_y, eat_score = process_inputs(text_A, text_B, X_dir_name, Y_dir_name)
+        
         scatter_fig = scatterplot(scatter_fig, X_label, Y_label, cos_a_scores_x, cos_b_scores_x, cos_a_scores_y, cos_b_scores_y)
-        scatter_fig.update_layout(title_text=f'Scatterplot, EAT Score: {scatter_eat_score}')
+        scatter_fig.update_layout(title_text=f'Scatterplot, EAT Score: {eat_score}')
         scatterplot_text = f'A: {text_A}\nB: {text_B}\nX: {x_filenames}\nY: {y_filenames}'
 
-        cos_a_scores_x, cos_b_scores_x, cos_a_scores_y, cos_b_scores_y, numberline_eat_score = process_inputs(text_A, text_B, f'{model_value}/{X_label}', f'{model_value}/{Y_label}')
         numberline_fig = number_line(numberline_fig, X_label, Y_label, cos_a_scores_x, cos_b_scores_x, cos_a_scores_y, cos_b_scores_y)
-        numberline_fig.update_layout(title_text=f'Number Line, EAT Score: {numberline_eat_score}')
+        numberline_fig.update_layout(title_text=f'Number Line, EAT Score: {eat_score}')
         numberline_text = f'A: {text_A}\nB: {text_B}\nX: {x_filenames}\nY: {y_filenames}'
 
         return scatterplot_text, scatterplot_dropdown_style, scatter_fig, numberline_text, numberline_dropdown_style, numberline_fig
@@ -489,6 +495,8 @@ def update_output(model_value, scatter_value, numberline_value, a_input, b_input
 
     return scatterplot_text, scatterplot_dropdown_style, scatter_fig, numberline_text, numberline_dropdown_style, numberline_fig
 
+def delete_local_files():
+    shutil.rmtree('upload')
 
-if __name__ == "__main__":
-    app.run_server(debug=True)
+atexit.register(delete_local_files)
+app.run_server(debug=True)
