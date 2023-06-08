@@ -266,6 +266,7 @@ app.layout = app.layout = dbc.Container(
                 options=[
                     {'label': 'Stable Diffusion v1.4', 'value': 'sd'},
                     {'label': 'VQGAN + CLIP', 'value': 'vqgan'},
+                    {'label': 'Upload Images', 'value': 'upload'}
                 ],
                 value='-1',
                 placeholder="Select a model"
@@ -279,7 +280,7 @@ app.layout = app.layout = dbc.Container(
                     'width': '100%',
                     'padding': '6px 12px',
                     'font-size': '14px',
-                    'line-height': '1.42857143',
+                    'line-height': '2',
                     'color': '#555',
                     'background-color': '#fff',
                     'background-image': 'none',
@@ -294,7 +295,7 @@ app.layout = app.layout = dbc.Container(
                     'width': '100%',
                     'padding': '6px 12px',
                     'font-size': '14px',
-                    'line-height': '1.42857143',
+                    'line-height': '2',
                     'color': '#555',
                     'background-color': '#fff',
                     'background-image': 'none',
@@ -304,7 +305,62 @@ app.layout = app.layout = dbc.Container(
                     'transition': 'border-color ease-in-out .15s,box-shadow ease-in-out .15s'
                 }),
             ],
-            style={'width': '100%', 'display': 'flex', 'align-items': 'center', 'justify-content': 'space-between'}
+            style={
+                'width': '100%', 
+                'display': 'flex', 
+                'align-items': 'center', 
+                'justify-content': 'space-between',
+                'marginTop': '10px',
+            }
+        ),
+        dbc.Row(
+            [
+                dbc.Col(
+                    dcc.Upload(
+                        id='upload-image-x',
+                        children=html.Div([
+                            'For X, Drag and Drop or ',
+                            html.A('Select Images')
+                        ]),
+                        style={
+                            'height': '60px',
+                            'lineHeight': '60px',
+                            'borderWidth': '1px',
+                            'borderStyle': 'dashed',
+                            'borderRadius': '5px',
+                            'textAlign': 'center',
+                        },
+                        multiple=True,
+                    ),
+                    style={'width': '100%'},
+                ),
+                dbc.Col(
+                    dcc.Upload(
+                        id='upload-image-y',
+                        children=html.Div([
+                            'For Y, Drag and Drop or ',
+                            html.A('Select Images'),
+                        ]),
+                        style={
+                            'height': '60px',
+                            'lineHeight': '60px',
+                            'borderWidth': '1px',
+                            'borderStyle': 'dashed',
+                            'borderRadius': '5px',
+                            'textAlign': 'center',
+                        },
+                        multiple=True,
+                    ),
+                    style={'width': '100%'},
+                ),
+            ],
+            style={
+                'width': '100%', 
+                'display': 'flex', 
+                'align-items': 'center', 
+                'justify-content': 'space-between',
+                'marginTop': '10px',
+            }
         ),
         dbc.Row(
             [
@@ -342,78 +398,28 @@ app.layout = app.layout = dbc.Container(
             ],
             style={'width': '100%', 'display': 'flex', 'align-items': 'center', 'justify-content': 'center'}
         ),
-        dbc.Row(
-            [
-                dbc.Col(
-                    [
-                        dcc.Upload(
-                            id='upload-image-x',
-                            children=html.Div([
-                                'For X, Drag and Drop or ',
-                                html.A('Select Images')
-                            ]),
-                            style={
-                                'width': '100%',
-                                'height': '60px',
-                                'lineHeight': '60px',
-                                'borderWidth': '1px',
-                                'borderStyle': 'dashed',
-                                'borderRadius': '5px',
-                                'textAlign': 'center',
-                                'margin': '10px'
-                            },
-                            multiple=True
-                        ),
-                        html.Div(id='output-images-x')
-                    ]
-                ),
-                dbc.Col(
-                    [
-                        dcc.Upload(
-                            id='upload-image-y',
-                            children=html.Div([
-                                'For Y, Drag and Drop or ',
-                                html.A('Select Images')
-                            ]),
-                            style={
-                                'width': '100%',
-                                'height': '60px',
-                                'lineHeight': '60px',
-                                'borderWidth': '1px',
-                                'borderStyle': 'dashed',
-                                'borderRadius': '5px',
-                                'textAlign': 'center',
-                                'margin': '10px'
-                            },
-                            multiple=True
-                        ),
-                        html.Div(id='output-images-y')
-                    ]
-                )
-            ],
-            style={'width': '100%', 'display': 'flex', 'align-items': 'center', 'justify-content': 'center'}
-        ),
     ],
     fluid=True
 )
 @app.callback(
     Output('scatterplot-text', 'children'),
-    Output("scatterplots", "figure"), 
+    Output('scatterplot-dropdown', 'style'),
+    Output('scatterplots', 'figure'), 
     Output('numberline-text', 'children'),
+    Output('numberline-dropdown', 'style'),
     Output("number-line", "figure"), 
-    Output('output-images-x', 'children'),
-    Output('output-images-y', 'children'),
     Input('model-dropdown', 'value'),
     Input('scatterplot-dropdown', 'value'),
     Input('numberline-dropdown', 'value'),
     Input('text-input-a', 'value'),
     Input('text-input-b', 'value'),
     Input('upload-image-x', 'contents'),
+    Input('upload-image-x', 'filename'),
     Input('upload-image-y', 'contents'),
+    Input('upload-image-y', 'filename'),
     # prevent_initial_call=True
 )
-def update_output(model_value, scatter_value, numberline_value, a_input, b_input, x_contents, y_contents):
-    # TODO: add upload as a model option, integrate with scatterplots, maybe use states for rendering
+def update_output(model_value, scatter_value, numberline_value, a_input, b_input, x_contents, x_filenames, y_contents, y_filenames):
     scatter_fig, numberline_fig = go.Figure(), go.Figure()
     # default
     scatter_fig.update_layout(
@@ -427,6 +433,9 @@ def update_output(model_value, scatter_value, numberline_value, a_input, b_input
         xaxis_title="Range from A to B",
     )
 
+    scatterplot_dropdown_style = {'display': 'block'}
+    numberline_dropdown_style = {'display': 'block'}
+
     # NOTE: text_A change by input, fix text_B or not?
     # NOTE: might be difficult for users to come up with several phrases, give it by theme?
     # text_A = ["person to have intercourse with", "person to be intimate with", "person to have sex with", "person to kiss", "person to undress", "person to have coitus with"]
@@ -434,11 +443,34 @@ def update_output(model_value, scatter_value, numberline_value, a_input, b_input
     # NOTE: but also one word works and might provide more interaction
     # text_A = ["person to have intercourse with"]
     # text_B = ["doctor"]
-    if a_input is None or b_input is None or model_value == '-1':
-        return "", scatter_fig, "", numberline_fig, html.Div(), html.Div()
+    if a_input is None or a_input == "" or b_input is None or b_input == "" or model_value == '-1':
+        return "", scatterplot_dropdown_style, scatter_fig, "", numberline_dropdown_style, numberline_fig
     
     text_A = [value.strip() for value in a_input.split(',')]
     text_B = [value.strip() for value in b_input.split(',')]
+
+    if x_contents is not None and y_contents is not None and model_value == 'upload':
+        scatterplot_dropdown_style = {'display': 'none'}
+        numberline_dropdown_style = {'display': 'none'}
+
+        x_filenames = [filename for filename in x_filenames]
+        y_filenames = [filename for filename in y_filenames]
+
+        save_uploaded_images(x_contents, 'upload/X')
+        save_uploaded_images(y_contents, 'upload/Y')
+
+        X_label, Y_label = 'X', 'Y'
+        cos_a_scores_x, cos_b_scores_x, cos_a_scores_y, cos_b_scores_y, scatter_eat_score = process_inputs(text_A, text_B, f'{model_value}/{X_label}', f'{model_value}/{Y_label}')
+        scatter_fig = scatterplot(scatter_fig, X_label, Y_label, cos_a_scores_x, cos_b_scores_x, cos_a_scores_y, cos_b_scores_y)
+        scatter_fig.update_layout(title_text=f'Scatterplot, EAT Score: {scatter_eat_score}')
+        scatterplot_text = f'A: {text_A}\nB: {text_B}\nX: {x_filenames}\nY: {y_filenames}'
+
+        cos_a_scores_x, cos_b_scores_x, cos_a_scores_y, cos_b_scores_y, numberline_eat_score = process_inputs(text_A, text_B, f'{model_value}/{X_label}', f'{model_value}/{Y_label}')
+        numberline_fig = number_line(numberline_fig, X_label, Y_label, cos_a_scores_x, cos_b_scores_x, cos_a_scores_y, cos_b_scores_y)
+        numberline_fig.update_layout(title_text=f'Number Line, EAT Score: {numberline_eat_score}')
+        numberline_text = f'A: {text_A}\nB: {text_B}\nX: {x_filenames}\nY: {y_filenames}'
+
+        return scatterplot_text, scatterplot_dropdown_style, scatter_fig, numberline_text, numberline_dropdown_style, numberline_fig
 
     scatter_value, numberline_value = int(scatter_value), int(numberline_value)
     scatterplot_text, numberline_text = "", ""
@@ -455,12 +487,7 @@ def update_output(model_value, scatter_value, numberline_value, a_input, b_input
         numberline_fig.update_layout(title_text=f'Number Line, EAT Score: {numberline_eat_score}')
         numberline_text = f'A: {text_A}\nB: {text_B}\nX: {X_label}\nY: {Y_label}'
 
-    if x_contents is not None and y_contents is not None:
-        save_uploaded_images(x_contents, 'upload/X')
-        save_uploaded_images(y_contents, 'upload/Y')
-        return scatterplot_text, scatter_fig, numberline_text, numberline_fig, html.Div("Images saved successfully."), html.Div("Images saved successfully.")
-    else: 
-        return scatterplot_text, scatter_fig, numberline_text, numberline_fig, html.Div(), html.Div()
+    return scatterplot_text, scatterplot_dropdown_style, scatter_fig, numberline_text, numberline_dropdown_style, numberline_fig
 
 
 if __name__ == "__main__":
