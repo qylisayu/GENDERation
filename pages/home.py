@@ -3,16 +3,16 @@ from dash import html, dcc
 
 dash.register_page(__name__, path='/')
 
-layout = html.Div([
-    html.H1('Home Page'),
-    html.Div([
+layout = html.Div(
+    [
         dcc.Link(
-            html.Button('Go to Eat', className='button'),
-            href='/eat-dashboard'
+            html.Button('EAT Dashboard', className='button'),
+            href='/eat-dashboard',
+            className='button-link',
         ),
         dcc.Link(
-            html.Button('Go to Stats', className='button'),
-            href='/stats-dashboard'
+            html.Button('Stats Dashboard', className='button'),
+            href='/stats-dashboard',
+            className='button-link',
         )
     ], className='button-container')
-])

@@ -274,7 +274,8 @@ layout = dbc.Container(
     [
         dcc.Link(
             html.Button('Go Home', className='button'),
-            href='/'
+            href='/',
+            className="button-container",
         ),
         dbc.Row(
             dcc.Dropdown(
@@ -282,52 +283,25 @@ layout = dbc.Container(
                 options=[
                     {'label': 'Stable Diffusion v1.4', 'value': 'sd'},
                     {'label': 'VQGAN + CLIP', 'value': 'vqgan'},
-                    {'label': 'Upload Images', 'value': 'upload'}
+                    {'label': 'Upload Your Own Images', 'value': 'upload'}
                 ],
                 value='-1',
-                placeholder="Select a model"
+                placeholder="Select the image source"
             ),
+            className='dropdown-container',
         ),
         dbc.Row(
             [
                 dcc.Input(
-                    id='text-input-a', type='text', placeholder='Enter Text A', 
-                    style={
-                    'width': '100%',
-                    'padding': '6px 12px',
-                    'font-size': '14px',
-                    'line-height': '2',
-                    'color': '#555',
-                    'background-color': '#fff',
-                    'background-image': 'none',
-                    'border': '1px solid #ccc',
-                    'border-radius': '4px',
-                    'box-shadow': 'inset 0 1px 1px rgba(0,0,0,.075)',
-                    'transition': 'border-color ease-in-out .15s,box-shadow ease-in-out .15s'
-                }),
+                    id='text-input-a', type='text', placeholder='Enter Text A',
+                    className='text-input', 
+                ),
                 dcc.Input(
                     id='text-input-b', type='text', placeholder='Enter Text B', 
-                    style={
-                    'width': '100%',
-                    'padding': '6px 12px',
-                    'font-size': '14px',
-                    'line-height': '2',
-                    'color': '#555',
-                    'background-color': '#fff',
-                    'background-image': 'none',
-                    'border': '1px solid #ccc',
-                    'border-radius': '4px',
-                    'box-shadow': 'inset 0 1px 1px rgba(0,0,0,.075)',
-                    'transition': 'border-color ease-in-out .15s,box-shadow ease-in-out .15s'
-                }),
+                    className='text-input', 
+                ),
             ],
-            style={
-                'width': '100%', 
-                'display': 'flex', 
-                'align-items': 'center', 
-                'justify-content': 'space-between',
-                'marginTop': '10px',
-            }
+            className="row-container-even-dist",
         ),
         dbc.Row(
             [
@@ -336,16 +310,9 @@ layout = dbc.Container(
                         id='upload-image-x',
                         children=html.Div([
                             'For X, Drag and Drop or ',
-                            html.A('Select Images')
-                        ]),
-                        style={
-                            'height': '60px',
-                            'lineHeight': '60px',
-                            'borderWidth': '1px',
-                            'borderStyle': 'dashed',
-                            'borderRadius': '5px',
-                            'textAlign': 'center',
-                        },
+                            html.A('Select Images', className="link-text")
+                        ], className="display-text"),
+                        className="upload-box",
                         multiple=True,
                     ),
                     style={'width': '100%'},
@@ -355,28 +322,15 @@ layout = dbc.Container(
                         id='upload-image-y',
                         children=html.Div([
                             'For Y, Drag and Drop or ',
-                            html.A('Select Images'),
-                        ]),
-                        style={
-                            'height': '60px',
-                            'lineHeight': '60px',
-                            'borderWidth': '1px',
-                            'borderStyle': 'dashed',
-                            'borderRadius': '5px',
-                            'textAlign': 'center',
-                        },
+                            html.A('Select Images', className="link-text"),
+                        ], className="display-text"),
+                        className="upload-box",
                         multiple=True,
                     ),
                     style={'width': '100%'},
                 ),
             ],
-            style={
-                'width': '100%', 
-                'display': 'flex', 
-                'align-items': 'center', 
-                'justify-content': 'space-between',
-                'marginTop': '10px',
-            }
+            className="row-container-even-dist",
         ),
         dbc.Row(
             [
@@ -387,14 +341,15 @@ layout = dbc.Container(
                             options=options_menu,
                             value='-1',
                             placeholder="Select a theme",
+                            className="dropdown-container",
                         ),
-                        html.P(id='scatterplot-text', style={'white-space': 'pre-line'}),
+                        html.P(id='scatterplot-text', className="display-text-wrap"),
                     ],
                     style={'width': '25%'}
                 ),
                 dcc.Graph(id="scatterplots", style={'width': '75%'})
             ],
-            style={'width': '100%', 'display': 'flex', 'align-items': 'center', 'justify-content': 'center'}
+            className="row-container-custom-dist",
         ),
         dbc.Row(
             [
@@ -404,15 +359,16 @@ layout = dbc.Container(
                             id='numberline-dropdown',
                             options=options_menu,
                             value='-1',
-                            placeholder="Select a theme"
+                            placeholder="Select a theme",
+                            className="dropdown-container",
                         ),
-                        html.P(id='numberline-text', style={'white-space': 'pre-line'}),
+                        html.P(id='numberline-text', className="display-text-wrap"),
                     ],
                     style={'width': '25%'}
                 ),
                 dcc.Graph(id="number-line", style={'width': '75%'}),
             ],
-            style={'width': '100%', 'display': 'flex', 'align-items': 'center', 'justify-content': 'center'}
+            className="row-container-custom-dist",
         ),
     ],
     fluid=True
