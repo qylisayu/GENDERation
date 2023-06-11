@@ -115,7 +115,7 @@ def update_output(model_value, theme_value, contents, filenames):
     fig.update_layout(
         title_text="Histogram", 
         xaxis=dict(
-            title='Classes for the Presentation of Gender',
+            title='Gender Expression Classes',
             tickvals=list(range(1, 11)),  # Specify the tick values
         ),
     )

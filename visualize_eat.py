@@ -5,6 +5,7 @@ from CLIP import clip
 import os
 import matplotlib.pyplot as plt
 
+ROUND_DIGITS = 3
 
 def get_image_embeddings(directory, column_count, preprocess, device, model):
   # Get a list of image file names in the directory
@@ -48,15 +49,27 @@ def s(w, A, B):
 def plot_dots(numbers, color, label=None):
     # Plot each number as a <color> dot
     for num in numbers:
-        plt.plot(num, 0, marker='o', markersize=8, color=color, label=label)
+        plt.plot(num, 0, marker='o', markersize=8, color=color, label=label, alpha=0.5)
 
 
 def scale(x, new_min=-1, new_max=1, old_min=-2, old_max=2):
     return ((new_max - new_min) * (x - old_min)) / (old_max - old_min) + new_min
 
 
+def compute_eat(X, Y, A, B, mean_association_x, mean_association_y, should_round):
+    union_set = np.concatenate((X, Y))
+    association_scores_union = np.array([s(w, A, B) for w in union_set])[:, 0]
+    std_dev_association = np.std(association_scores_union)
+
+    # Calculate EAT score
+    eat_score_x_y = (mean_association_x - mean_association_y) / std_dev_association
+    if should_round:
+        eat_score_x_y = round(eat_score_x_y, ROUND_DIGITS)
+    return eat_score_x_y
+
+
 # calculate EAT score
-def calculate_eat_score(X, Y, A, B):
+def calculate_eat_score(X, Y, A, B, should_round=False, Z=None):
     # Calculate association scores for elements in set X
     similarity_scores_x = np.array([s(x, A, B) for x in X])
     association_scores_x = similarity_scores_x[:, 0]
@@ -72,18 +85,27 @@ def calculate_eat_score(X, Y, A, B):
     cos_a_scores_y = similarity_scores_y[:, 1]
     cos_b_scores_y = similarity_scores_y[:, 2]
 
-    # Calculate association scores for elements in the union of sets X and Y
-    union_set = np.concatenate((X, Y))
-    association_scores_union = np.array([s(w, A, B) for w in union_set])[:, 0]
-    std_dev_association = np.std(association_scores_union)
+    # Calculate EAT score for X and Y
+    eat_score_x_y = compute_eat(X, Y, A, B, mean_association_x, mean_association_y, should_round)
 
-    # Calculate EAT score
-    eat_score = (mean_association_x - mean_association_y) / std_dev_association
-    return cos_a_scores_x, cos_b_scores_x, cos_a_scores_y, cos_b_scores_y, eat_score
+    if Z is not None:
+        # Calculate association scores for elements in set Z
+        similarity_scores_z = np.array([s(z, A, B) for z in Z])
+        association_scores_z = similarity_scores_z[:, 0]
+        mean_association_z = np.mean(association_scores_z)
+
+        cos_a_scores_z = similarity_scores_z[:, 1]
+        cos_b_scores_z = similarity_scores_z[:, 2]
+
+        eat_score_x_z = compute_eat(X, Z, A, B, mean_association_x, mean_association_z, should_round)
+        eat_score_y_z = compute_eat(Y, Z, A, B, mean_association_y, mean_association_z, should_round)
+        return cos_a_scores_x, cos_b_scores_x, cos_a_scores_y, cos_b_scores_y, cos_a_scores_z, cos_b_scores_z, eat_score_x_y, eat_score_x_z, eat_score_y_z
+    else:
+        return cos_a_scores_x, cos_b_scores_x, cos_a_scores_y, cos_b_scores_y, [], [], eat_score_x_y, None, None
 
 
 # calculate EAT score (with plots)
-def calculate_and_visualize_eat(X, Y, A, B):
+def calculate_and_visualize_eat(X, Y, Z, A, B):
     # Calculate association scores for elements in set X
     similarity_scores_x = np.array([s(x, A, B) for x in X])
     association_scores_x = similarity_scores_x[:, 0]
@@ -93,6 +115,11 @@ def calculate_and_visualize_eat(X, Y, A, B):
     similarity_scores_y = np.array([s(y, A, B) for y in Y])
     association_scores_y = similarity_scores_y[:, 0]
     mean_association_y = np.mean(association_scores_y)
+
+    # Calculate association scores for elements in set Z
+    similarity_scores_z = np.array([s(z, A, B) for z in Z])
+    association_scores_z = similarity_scores_z[:, 0]
+    mean_association_z = np.mean(association_scores_z)
 
     # Number line plotting the cosine similarities
     plt.axhline(0, color='black')  # Draw the number line at y=0 (for individual points)
@@ -113,6 +140,13 @@ def calculate_and_visualize_eat(X, Y, A, B):
     plot_dots(visualization_scores_y, 'red')
     plt.plot(mean_visualization_y, 1, marker='x', markersize=8, color='red')
     
+    cos_a_scores_z = similarity_scores_z[:, 1]
+    cos_b_scores_z = similarity_scores_z[:, 2]
+    visualization_scores_z = [scale((-cos_a_scores_z[i] + cos_b_scores_z[i])) for i in range(len(cos_a_scores_z))]
+    mean_visualization_z = np.mean(visualization_scores_z)
+    plot_dots(visualization_scores_z, 'green')
+    plt.plot(mean_visualization_z, 1, marker='x', markersize=8, color='green')
+
     plt.yticks([])  # Remove y-axis ticks
     plt.savefig('number-line.png')
     plt.clf()
@@ -124,6 +158,9 @@ def calculate_and_visualize_eat(X, Y, A, B):
     plt.scatter(cos_a_scores_y, cos_b_scores_y, color='red', label='Y', alpha=0.1)
     mean_y = np.mean(cos_a_scores_y), np.mean(cos_b_scores_y)
     plt.plot(mean_y[0], mean_y[1], marker='x', markersize=8, color='red')
+    plt.scatter(cos_a_scores_z, cos_b_scores_z, color='green', label='Z', alpha=0.1)
+    mean_z = np.mean(cos_a_scores_z), np.mean(cos_b_scores_z)
+    plt.plot(mean_z[0], mean_z[1], marker='x', markersize=8, color='green')
     plt.xlabel('A Similarity Scores')
     plt.ylabel('B Similarity Scores')
     plt.legend()
@@ -151,6 +188,7 @@ if __name__ == "__main__":
     text_B = ["scientist", "researcher", "engineer", "physicist", "mathematician", "chemist"] # same as https://arxiv.org/pdf/2212.11261.pdf
     X_dir_name = "sd/photo_portrait_of_a_female_doctor"
     Y_dir_name = "sd/photo_portrait_of_a_male_doctor"
+    Z_dir_name = "sd/photo_portrait_of_a_nonbinary_doctor"
 
     # pre-process text
     text_A_tokenized = clip.tokenize(text_A).to(device)
@@ -168,7 +206,8 @@ if __name__ == "__main__":
     # get image embeddings
     X = get_image_embeddings(X_dir_name, A.shape[1], preprocess, device, model)
     Y = get_image_embeddings(Y_dir_name, A.shape[1], preprocess, device, model)
+    Z = get_image_embeddings(Z_dir_name, A.shape[1], preprocess, device, model)
 
     # TODO: not the most clean code lol
-    print(f'EAT score: {calculate_eat_score(X, Y, A, B)[4]}')
-    print(f'EAT score: {calculate_and_visualize_eat(X, Y, A, B)}')
+    print(f'EAT score: {calculate_eat_score(X, Y, A, B, False, Z)[-3:]}')
+    print(f'EAT score: {calculate_and_visualize_eat(X, Y, Z, A, B)}')
