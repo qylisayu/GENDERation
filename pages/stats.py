@@ -3,20 +3,26 @@ from dash import html, dcc, callback, dash_table
 import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output
 import plotly.graph_objects as go
+from transformers import CLIPProcessor, CLIPModel
+import os
+import shutil
+import base64
+from visualize_eat import label_with_clip_embeddings
 
 labor_stats = {'doctor': 43.8, 'nurse': 87.9, 'manager': 40.5, 'programmer': 22.1, 'financial analyst': 40.2, 'professor': 48.4}
+num_classes = 10
 
 options_menu = [
-    {'label': 'doctor', 'value': 0},
-    {'label': 'nurse', 'value': 1},
-    {'label': 'manager', 'value': 2},
-    {'label': 'programmer', 'value': 3},
-    {'label': 'financial analyst', 'value': 4},
-    {'label': 'professor', 'value': 5},
-    {'label': 'rich', 'value': 6},
-    {'label': 'poor', 'value': 7},
-    {'label': 'assertive', 'value': 8},
-    {'label': 'emotional', 'value': 9},
+    {'label': 'doctor', 'value': 'photo_portrait_of_a_doctor'},
+    {'label': 'nurse', 'value': 'photo_portrait_of_a_nurse'},
+    {'label': 'manager', 'value': 'photo_portrait_of_a_manager'},
+    {'label': 'programmer', 'value': 'photo_portrait_of_a_programmer'},
+    {'label': 'financial analyst', 'value': 'photo_portrait_of_a_financial_analyst'},
+    {'label': 'professor', 'value': 'photo_portrait_of_a_professor'},
+    {'label': 'rich', 'value': 'photo_portrait_of_a_rich_person'},
+    {'label': 'poor', 'value': 'photo_portrait_of_a_poor_person'},
+    {'label': 'assertive', 'value': 'photo_portrait_of_an_assertive_person'},
+    {'label': 'emotional', 'value': 'photo_portrait_of_an_emotional_person'},
 ]
 
 
@@ -27,6 +33,26 @@ def histogram(figure, counts):
     )
     figure.add_trace(x_fig)
     return figure
+
+
+def save_uploaded_images(contents, directory):
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    else:   # account for reupload case, where old number of images > new number of images
+        shutil.rmtree(directory)
+        os.makedirs(directory)
+
+    for i in range(len(contents)):
+        content = contents[i]
+
+        # Get the image data
+        _, content_string = content.split(',')
+
+        # Decode and save the image locally
+        decoded_image = base64.b64decode(content_string)
+        image_filename = os.path.join(f'{directory}', f'{i}.png')
+        with open(image_filename, 'wb') as f:
+            f.write(decoded_image)
 
 
 dash.register_page(
@@ -108,17 +134,30 @@ layout = html.Div([
     # prevent_initial_call=True
 )
 def update_output(model_value, theme_value, contents, filenames):
-    counts = [10, 9, 8, 7, 6, 5, 4, 3, 2, 1]    # TODO: counts of individual classes, get from model
-    labor_stats_table = [{'occupation': key, 'female percentage': value} for key, value in labor_stats.items()]
+    model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
+    processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
 
+    labor_stats_table = [{'occupation': key, 'female percentage': value} for key, value in labor_stats.items()]
     fig = go.Figure()
     fig.update_layout(
         title_text="Histogram", 
         xaxis=dict(
             title='Gender Expression Classes',
-            tickvals=list(range(1, 11)),  # Specify the tick values
+            tickvals=list(range(1, num_classes + 1)),  # Specify the tick values
+            ticktext=['feminine' if i <= 4 else 'androgynous' if i <= 6 else 'masculine' for i in range(1, num_classes + 1)]  # TODO: finalize these
         ),
+        xaxis_range=[1, num_classes],
     )
+
+    if model_value == '-1' or (model_value == 'upload' and contents is None) or (model_value == 'sd' and theme_value == '-1'):
+        return labor_stats_table, fig
+    
+    if model_value == 'upload' and contents is not None:
+        image_dir_name = model_value
+        save_uploaded_images(contents, image_dir_name)
+    else:
+        image_dir_name = f'{model_value}/{theme_value}'
+    counts = label_with_clip_embeddings(image_dir_name, model, processor, num_classes)
     fig = histogram(fig, counts)
-    # TODO: add scale image for reference once we finalize that
+
     return labor_stats_table, fig

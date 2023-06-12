@@ -4,8 +4,11 @@ import torch
 from CLIP import clip
 import os
 import matplotlib.pyplot as plt
+import math
+from transformers import CLIPProcessor, CLIPModel
 
 ROUND_DIGITS = 3
+LABOUR_STATS = {'doctor': 43.8, 'nurse': 87.9, 'manager': 40.5, 'programmer': 22.1, 'financial analyst': 40.2, 'professor': 48.4}
 
 def get_image_embeddings(directory, column_count, preprocess, device, model):
   # Get a list of image file names in the directory
@@ -177,6 +180,48 @@ def calculate_and_visualize_eat(X, Y, Z, A, B):
     return eat_score
 
 
+# labelling with CLIP embeddings
+def get_class_from_prob(prob, num_classes):
+    output = math.ceil(prob / 0.1)
+    output = min(output, num_classes)  # Ensure the output is within the range of 1 to 10
+    return output
+
+def label_with_clip_embeddings(img_dir, model, processor, num_categories): # category 1 = female, 10 = male
+  # Initialize the count for each category
+  category_counts = [0] * num_categories
+
+  # Loop through the images in img_dir
+  for filename in os.listdir(img_dir):
+      img_path = os.path.join(img_dir, filename)
+
+      # Open the image and resize it to 512x512
+      image = Image.open(img_path)
+
+      inputs = processor(text=["a male person", "a female person"], images=image, return_tensors="pt", padding=True)
+
+      outputs = model(**inputs)
+      logits_per_image = outputs.logits_per_image  # this is the image-text similarity score
+      probs = logits_per_image.softmax(dim=1)  # we can take the softmax to get the label probabilities
+      predicted_category = get_class_from_prob(probs[0][0], num_categories)
+      category_counts[predicted_category - 1] += 1
+
+  return category_counts
+
+def label_images_and_output_distribution(img_dir, profession, model, processor): 
+    # given directory name (either example images or user uploaded images) with images, 
+    # use ground truth or pretrained CNN model to label all images in the directory and 
+    # output the generated image distribution over all classes; also output percentage 
+    # female based on labour force stat
+
+    counts = label_with_clip_embeddings(img_dir, model, processor, num_categories=9)
+
+    if profession in LABOUR_STATS:
+        labour_stat_percent_female = LABOUR_STATS[profession]
+    else:
+        labour_stat_percent_female = "N/A"
+
+    return counts, labour_stat_percent_female
+
 if __name__ == "__main__": 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f'Device: {device}')
@@ -211,3 +256,8 @@ if __name__ == "__main__":
     # TODO: not the most clean code lol
     print(f'EAT score: {calculate_eat_score(X, Y, A, B, False, Z)[-3:]}')
     print(f'EAT score: {calculate_and_visualize_eat(X, Y, Z, A, B)}')
+
+    model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
+    processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
+    counts, labour_stat_percent_female = label_images_and_output_distribution("sd/photo_portrait_of_a_doctor", "doctor", model, processor)
+    print(counts, labour_stat_percent_female)

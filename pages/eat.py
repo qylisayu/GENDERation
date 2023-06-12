@@ -24,7 +24,7 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 # load model and image preprocessing
 model, preprocess = clip.load("ViT-B/32", device=device, jit=False)
 
-X_Y_pairs = [
+directory_labels = [
     ('photo portrait of a female doctor', 'photo portrait of a male doctor', 'photo portrait of a nonbinary doctor'), 
     ('photo portrait of a female nurse', 'photo portrait of a male nurse', 'photo portrait of a nonbinary nurse'),
     ('photo portrait of a female manager', 'photo portrait of a male manager', 'photo portrait of a nonbinary manager'),
@@ -82,7 +82,7 @@ def create_buttons_list(size, step_size, add_padding=False):
     my_buttons_list = []
     for i in range(size):
         start_index = step_size * i
-        my_dict = dict(label=str(X_Y_pairs[i]),
+        my_dict = dict(label=str(directory_labels[i]),
                         method='update',
                         args=[{'visible': ([False] * start_index) + 
                                 ([True] * step_size) + 
@@ -176,9 +176,9 @@ def number_line(figure, X_label, Y_label, cos_a_scores_x, cos_b_scores_x, cos_a_
 
 def produce_number_line(data_source): 
     fig = go.Figure()
-    total_size = len(X_Y_pairs)
+    total_size = len(directory_labels)
     for i in range(total_size): 
-        X_label, Y_label = X_Y_pairs[i]
+        X_label, Y_label = directory_labels[i]
         cos_a_scores_x, cos_b_scores_x, cos_a_scores_y, cos_b_scores_y, _ = data_source[i]
         fig = number_line(fig, X_label, Y_label, cos_a_scores_x, cos_b_scores_x, cos_a_scores_y, cos_b_scores_y)
 
@@ -279,12 +279,12 @@ def produce_scatterplot(data_source):
     data_source is a list of 5-tuple elements.
     (cos_a_scores_x, cos_b_scores_x, cos_a_scores_y, cos_b_scores_y, eat_score).
 
-    length should match that of X_Y_pairs list.
+    length should match that of directory_labels list.
     """
     fig = go.Figure()
-    total_size = len(X_Y_pairs)
+    total_size = len(directory_labels)
     for i in range(total_size): 
-        X_label, Y_label = X_Y_pairs[i]
+        X_label, Y_label = directory_labels[i]
         cos_a_scores_x, cos_b_scores_x, cos_a_scores_y, cos_b_scores_y, _ = data_source[i]
         fig = scatterplot(fig, X_label, Y_label, cos_a_scores_x, cos_b_scores_x, cos_a_scores_y, cos_b_scores_y)
 
@@ -505,12 +505,12 @@ def update_output(model_value, scatter_value, numberline_value, a_input, b_input
     scatterplot_text, numberline_text = "", ""
     if scatter_value != -1: 
         if model_value == "sd":
-            X_label, Y_label, Z_label = X_Y_pairs[scatter_value]
+            X_label, Y_label, Z_label = directory_labels[scatter_value]
             cos_a_scores_x, cos_b_scores_x, cos_a_scores_y, cos_b_scores_y, cos_a_scores_z, cos_b_scores_z, scatter_eat_score_x_y, scatter_eat_score_x_z, scatter_eat_score_y_z = process_inputs(text_A, text_B, f'{model_value}/{add_underscore(X_label)}', f'{model_value}/{add_underscore(Y_label)}', f'{model_value}/{add_underscore(Z_label)}')
             scatter_fig = scatterplot(scatter_fig, X_label, Y_label, cos_a_scores_x, cos_b_scores_x, cos_a_scores_y, cos_b_scores_y, Z_label, cos_a_scores_z, cos_b_scores_z)
             scatterplot_text = f'A: {text_A}\nB: {text_B}\nX: {X_label}\nY: {Y_label}\nEAT F-M = {scatter_eat_score_x_y}\nEAT F-N = {scatter_eat_score_x_z}\nEAT M-N = {scatter_eat_score_y_z}'
         else:   # vqgan has binary sample images due to compute limits
-            X_label, Y_label, _ = X_Y_pairs[scatter_value]
+            X_label, Y_label, _ = directory_labels[scatter_value]
             cos_a_scores_x, cos_b_scores_x, cos_a_scores_y, cos_b_scores_y, _, _, scatter_eat_score, _, _ = process_inputs(text_A, text_B, f'{model_value}/{add_underscore(X_label)}', f'{model_value}/{add_underscore(Y_label)}')
             scatter_fig = scatterplot(scatter_fig, X_label, Y_label, cos_a_scores_x, cos_b_scores_x, cos_a_scores_y, cos_b_scores_y)
             scatter_fig.update_layout(title_text=f'Scatterplot, EAT Score: {scatter_eat_score}')
@@ -521,7 +521,7 @@ def update_output(model_value, scatter_value, numberline_value, a_input, b_input
                 numberline_fig = number_line(numberline_fig, X_label, Y_label, cos_a_scores_x, cos_b_scores_x, cos_a_scores_y, cos_b_scores_y, Z_label, cos_a_scores_z, cos_b_scores_z)
                 numberline_text = scatterplot_text
             else:
-                X_label, Y_label, Z_label = X_Y_pairs[numberline_value]
+                X_label, Y_label, Z_label = directory_labels[numberline_value]
                 cos_a_scores_x, cos_b_scores_x, cos_a_scores_y, cos_b_scores_y, cos_a_scores_z, cos_b_scores_z, numberline_eat_score_x_y, numberline_eat_score_x_z, numberline_eat_score_y_z = process_inputs(text_A, text_B, f'{model_value}/{add_underscore(X_label)}', f'{model_value}/{add_underscore(Y_label)}', f'{model_value}/{add_underscore(Z_label)}')
                 numberline_fig = number_line(numberline_fig, X_label, Y_label, cos_a_scores_x, cos_b_scores_x, cos_a_scores_y, cos_b_scores_y, Z_label, cos_a_scores_z, cos_b_scores_z)
                 numberline_text = f'A: {text_A}\nB: {text_B}\nX: {X_label}\nY: {Y_label}\nEAT F-M = {numberline_eat_score_x_y}\nEAT F-N = {numberline_eat_score_x_z}\nEAT M-N = {numberline_eat_score_y_z}'
@@ -531,7 +531,7 @@ def update_output(model_value, scatter_value, numberline_value, a_input, b_input
                 numberline_fig.update_layout(title_text=f'Number Line, EAT Score: {scatter_eat_score}')
                 numberline_text = scatterplot_text
             else:
-                X_label, Y_label, _ = X_Y_pairs[numberline_value]
+                X_label, Y_label, _ = directory_labels[numberline_value]
                 cos_a_scores_x, cos_b_scores_x, cos_a_scores_y, cos_b_scores_y, numberline_eat_score = process_inputs(text_A, text_B, f'{model_value}/{add_underscore(X_label)}', f'{model_value}/{add_underscore(Y_label)}')
                 numberline_fig = number_line(numberline_fig, X_label, Y_label, cos_a_scores_x, cos_b_scores_x, cos_a_scores_y, cos_b_scores_y)
                 numberline_fig.update_layout(title_text=f'Number Line, EAT Score: {numberline_eat_score}')
