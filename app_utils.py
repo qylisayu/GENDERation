@@ -1,6 +1,8 @@
 import os
 import shutil
 import base64
+from dash import html
+import math
 
 def add_underscore(string_to_modify):
     return str.replace(string_to_modify, ' ', '_')
@@ -24,3 +26,16 @@ def save_uploaded_images(contents, directory):
         with open(image_filename, 'wb') as f:
             f.write(decoded_image)
 
+def generate_image_collage(dir_name):
+    image_paths = os.listdir(dir_name)
+    image_scatter = html.Div(
+        [generate_image_element(f'{dir_name}/{image_path}') for image_path in image_paths],
+        className='image-collage',
+    )
+    return image_scatter
+
+def generate_image_element(image_path):
+    with open(image_path, 'rb') as f:
+        encoded_image = base64.b64encode(f.read()).decode('ascii')
+    image_element = html.Img(src=f"data:image/png;base64,{encoded_image}", style={'max-width': '128px', 'max-height': '128px'})
+    return image_element

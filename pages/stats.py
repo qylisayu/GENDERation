@@ -1,3 +1,4 @@
+import os
 import dash
 from dash import html, dcc, callback, dash_table
 import dash_bootstrap_components as dbc
@@ -6,7 +7,7 @@ import plotly.graph_objects as go
 from transformers import CLIPProcessor, CLIPModel
 
 from visualize_eat import label_with_clip_embeddings
-from app_utils import save_uploaded_images
+from app_utils import save_uploaded_images, generate_image_collage
 
 labor_stats = {'doctor': 43.8, 'nurse': 87.9, 'manager': 40.5, 'programmer': 22.1, 'financial analyst': 40.2, 'professor': 48.4}
 num_classes = 10
@@ -24,10 +25,7 @@ options_menu = [
 ]
 
 def histogram(figure, counts):
-    x_fig = go.Histogram(
-        x = sum([[i + 1] * count for i, count in enumerate(counts)], []),
-        xbins=dict(start=1, end=num_classes + 1, size=1),
-    )
+    x_fig = go.Histogram(x = sum([[i + 1] * count for i, count in enumerate(counts)], []))
     figure.add_trace(x_fig)
     return figure
 
@@ -99,17 +97,20 @@ layout = html.Div([
         ],
         className="row-container-custom-dist",
     ),
+    dbc.Row(
+        html.Div(id='image-collage'),
+    ),
 ])
 @callback(
     Output('professions-table', 'data'),
     Output('histogram', 'figure'), 
+    Output('image-collage', 'children'),
     Input('model-dropdown', 'value'),
     Input('theme-dropdown', 'value'),
     Input('upload-image', 'contents'),
-    Input('upload-image', 'filename'),
     # prevent_initial_call=True
 )
-def update_output(model_value, theme_value, contents, filenames):
+def update_output(model_value, theme_value, contents):
     model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
     processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
 
@@ -126,14 +127,16 @@ def update_output(model_value, theme_value, contents, filenames):
     )
 
     if model_value == '-1' or (model_value == 'upload' and contents is None) or (model_value == 'sd' and theme_value == '-1'):
-        return labor_stats_table, fig
+        return labor_stats_table, fig, None
     
     if model_value == 'upload' and contents is not None:
         image_dir_name = model_value
         save_uploaded_images(contents, image_dir_name)
     else:
         image_dir_name = f'{model_value}/{theme_value}'
+    
     counts = label_with_clip_embeddings(image_dir_name, model, processor, num_classes)
     fig = histogram(fig, counts)
+    image_collage = generate_image_collage(image_dir_name)
 
-    return labor_stats_table, fig
+    return labor_stats_table, fig, image_collage
