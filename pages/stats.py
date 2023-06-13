@@ -4,14 +4,12 @@ import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output
 import plotly.graph_objects as go
 from transformers import CLIPProcessor, CLIPModel
-import os
-import shutil
-import base64
+
 from visualize_eat import label_with_clip_embeddings
+from app_utils import save_uploaded_images
 
 labor_stats = {'doctor': 43.8, 'nurse': 87.9, 'manager': 40.5, 'programmer': 22.1, 'financial analyst': 40.2, 'professor': 48.4}
 num_classes = 10
-
 options_menu = [
     {'label': 'doctor', 'value': 'photo_portrait_of_a_doctor'},
     {'label': 'nurse', 'value': 'photo_portrait_of_a_nurse'},
@@ -25,35 +23,13 @@ options_menu = [
     {'label': 'emotional', 'value': 'photo_portrait_of_an_emotional_person'},
 ]
 
-
 def histogram(figure, counts):
     x_fig = go.Histogram(
         x = sum([[i + 1] * count for i, count in enumerate(counts)], []),
-        xbins=dict(start=1, end=11, size=1),
+        xbins=dict(start=1, end=num_classes + 1, size=1),
     )
     figure.add_trace(x_fig)
     return figure
-
-
-def save_uploaded_images(contents, directory):
-    if not os.path.exists(directory):
-        os.makedirs(directory)
-    else:   # account for reupload case, where old number of images > new number of images
-        shutil.rmtree(directory)
-        os.makedirs(directory)
-
-    for i in range(len(contents)):
-        content = contents[i]
-
-        # Get the image data
-        _, content_string = content.split(',')
-
-        # Decode and save the image locally
-        decoded_image = base64.b64decode(content_string)
-        image_filename = os.path.join(f'{directory}', f'{i}.png')
-        with open(image_filename, 'wb') as f:
-            f.write(decoded_image)
-
 
 dash.register_page(
     __name__,

@@ -4,14 +4,11 @@ from dash.dependencies import Input, Output
 import plotly.graph_objects as go
 import dash_bootstrap_components as dbc
 
-import base64
-import os
-import shutil
-import atexit
 import numpy as np
 import torch
 from CLIP import clip
 from visualize_eat import get_image_embeddings, scale, calculate_eat_score
+from app_utils import save_uploaded_images, add_underscore
 
 dash.register_page(
     __name__,
@@ -49,10 +46,6 @@ options_menu = [
     {'label': 'assertive', 'value': 8},
     {'label': 'emotional', 'value': 9},
 ]
-
-def add_underscore(string_to_modify):
-    return str.replace(string_to_modify, ' ', '_')
-
 
 def process_inputs(text_A, text_B, X_dir_name, Y_dir_name, Z_dir_name=None):
     # pre-process text
@@ -304,27 +297,6 @@ def produce_scatterplot(data_source):
     return fig
 
 
-def save_uploaded_images(contents, directory):
-    if not os.path.exists(directory):
-        os.makedirs(directory)
-    else:   # account for reupload case, where old number of images > new number of images
-        shutil.rmtree(directory)
-        os.makedirs(directory)
-
-    for i in range(len(contents)):
-        content = contents[i]
-
-        # Get the image data
-        _, content_string = content.split(',')
-
-        # Decode and save the image locally
-        decoded_image = base64.b64decode(content_string)
-        image_filename = os.path.join(f'{directory}', f'{i}.png')
-        with open(image_filename, 'wb') as f:
-            f.write(decoded_image)
-
-
-
 layout = dbc.Container(
     [
         dcc.Link(
@@ -538,9 +510,3 @@ def update_output(model_value, scatter_value, numberline_value, a_input, b_input
                 numberline_text = f'A: {text_A}\nB: {text_B}\nX: {X_label}\nY: {Y_label}'
 
     return scatterplot_text, scatterplot_dropdown_style, scatter_fig, numberline_text, numberline_dropdown_style, numberline_fig
-
-def delete_local_files():
-    if os.path.exists('upload'):
-        shutil.rmtree('upload')
-
-atexit.register(delete_local_files)
