@@ -30,9 +30,9 @@ def histogram(figure, counts):
 
 dash.register_page(
     __name__,
-    path='/stats-dashboard',
-    title='Statistics Dashboard',
-    name='Statistics Dashboard'
+    path='/label-dashboard',
+    title='Label Dashboard',
+    name='Label Dashboard'
 )
 layout = html.Div([
     dcc.Link(
