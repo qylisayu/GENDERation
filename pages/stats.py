@@ -1,4 +1,3 @@
-import os
 import dash
 from dash import html, dcc, callback, dash_table
 import dash_bootstrap_components as dbc
@@ -121,7 +120,8 @@ def update_output(model_value, theme_value, contents):
         xaxis=dict(
             title='Gender Expression Classes',
             tickvals=list(range(1, num_classes + 1)),  # Specify the tick values
-            ticktext=['feminine' if i <= 4 else 'androgynous' if i <= 6 else 'masculine' for i in range(1, num_classes + 1)]  # TODO: finalize these
+            # TODO: finalize these
+            ticktext=[f'feminine ({i})' if i <= 4 else f'androgynous ({i})' if i <= 6 else f'masculine ({i})' for i in range(1, num_classes + 1)]
         ),
         xaxis_range=[1, num_classes],
     )
@@ -136,7 +136,9 @@ def update_output(model_value, theme_value, contents):
         image_dir_name = f'{model_value}/{theme_value}'
     
     counts = label_with_clip_embeddings(image_dir_name, model, processor, num_classes)
+    feminine_proportion = sum(counts[:4]) / sum(counts)
     fig = histogram(fig, counts)
+    fig.update_layout(title_text=f'Histogram, Feminine Percentage: {round(feminine_proportion * 100, 2)}% ({sum(counts[:4])}/{sum(counts)})')
     image_collage = generate_image_collage(image_dir_name)
 
     return labor_stats_table, fig, image_collage

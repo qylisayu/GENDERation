@@ -37,5 +37,5 @@ def generate_image_collage(dir_name):
 def generate_image_element(image_path):
     with open(image_path, 'rb') as f:
         encoded_image = base64.b64encode(f.read()).decode('ascii')
-    image_element = html.Img(src=f"data:image/png;base64,{encoded_image}", style={'max-width': '128px', 'max-height': '128px'})
+    image_element = html.Img(src=f"data:image/png;base64,{encoded_image}", style={'max-width': '100px', 'max-height': '100px'})
     return image_element
