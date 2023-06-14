@@ -10,6 +10,8 @@ from CLIP import clip
 from visualize_eat import get_image_embeddings, scale, calculate_eat_score
 from app_utils import save_uploaded_images, add_underscore, generate_image_collage
 
+# TODO: photo_portrait_of_an_emotional_nonbinary_person missing
+# TODO: MCAS integration (prompts)
 dash.register_page(
     __name__,
     path='/eat-dashboard',
@@ -68,23 +70,6 @@ def process_inputs(text_A, text_B, X_dir_name, Y_dir_name, Z_dir_name=None):
     else:
         return calculate_eat_score(X, Y, A, B, True)
 
-
-def create_buttons_list(size, step_size, add_padding=False):
-    """Generates the button list for the updatemenus option based on size.
-    """
-    my_buttons_list = []
-    for i in range(size):
-        start_index = step_size * i
-        my_dict = dict(label=str(directory_labels[i]),
-                        method='update',
-                        args=[{'visible': ([False] * start_index) + 
-                                ([True] * step_size) + 
-                                ([False] * (step_size * size - step_size - start_index)) + 
-                                (add_padding * [True, True])}
-                    ])
-        my_buttons_list.append(my_dict)
-    # print(my_buttons_list)
-    return my_buttons_list
 
 def number_line(figure, X_label, Y_label, cos_a_scores_x, cos_b_scores_x, cos_a_scores_y, cos_b_scores_y, Z_label=None, cos_a_scores_z=None, cos_b_scores_z=None):
     visualization_scores_x = [scale((-cos_a_scores_x[i] + cos_b_scores_x[i])) for i in range(len(cos_a_scores_x))]
@@ -166,29 +151,6 @@ def number_line(figure, X_label, Y_label, cos_a_scores_x, cos_b_scores_x, cos_a_
     return figure
 
 
-def produce_number_line(data_source): 
-    fig = go.Figure()
-    total_size = len(directory_labels)
-    for i in range(total_size): 
-        X_label, Y_label = directory_labels[i]
-        cos_a_scores_x, cos_b_scores_x, cos_a_scores_y, cos_b_scores_y, _ = data_source[i]
-        fig = number_line(fig, X_label, Y_label, cos_a_scores_x, cos_b_scores_x, cos_a_scores_y, cos_b_scores_y)
-
-    my_buttons_list = create_buttons_list(total_size, 4)
-    fig.update_layout(
-    updatemenus=[
-        dict(
-        active=-1,
-        buttons=my_buttons_list,
-    )
-    ])
-    fig.update_layout(
-        title_text="Number Line", 
-        xaxis_title="Range from A to B",
-    )
-    return fig
-
-
 def scatterplot(figure, X_label, Y_label, cos_a_scores_x, cos_b_scores_x, cos_a_scores_y, cos_b_scores_y, Z_label=None, cos_a_scores_z=None, cos_b_scores_z=None):
     mean_x = np.mean(cos_a_scores_x), np.mean(cos_b_scores_x)
     mean_y = np.mean(cos_a_scores_y), np.mean(cos_b_scores_y)
@@ -200,7 +162,7 @@ def scatterplot(figure, X_label, Y_label, cos_a_scores_x, cos_b_scores_x, cos_a_
         name=X_label,
         marker=dict(
             symbol='circle', 
-            color='rgba(0, 0, 255, 0.2)',
+            color='rgba(0, 0, 255, 0.5)',
         )
     )
     y_fig = go.Scatter(
@@ -210,7 +172,7 @@ def scatterplot(figure, X_label, Y_label, cos_a_scores_x, cos_b_scores_x, cos_a_
         name=Y_label,
         marker=dict(
             symbol='circle', 
-            color='rgba(255, 0, 0, 0.2)',
+            color='rgba(255, 0, 0, 0.5)',
         )
     )
     x_mean_fig = go.Scatter(
@@ -247,7 +209,7 @@ def scatterplot(figure, X_label, Y_label, cos_a_scores_x, cos_b_scores_x, cos_a_
             name=Z_label,
             marker=dict(
                 symbol='circle', 
-                color='rgba(0, 255, 0, 0.2)',
+                color='rgba(0, 255, 0, 0.5)',
             )
         )
         z_mean_fig = go.Scatter(
@@ -264,36 +226,6 @@ def scatterplot(figure, X_label, Y_label, cos_a_scores_x, cos_b_scores_x, cos_a_
         figure.add_trace(z_mean_fig)
 
     return figure
-
-
-def produce_scatterplot(data_source):
-    """
-    data_source is a list of 5-tuple elements.
-    (cos_a_scores_x, cos_b_scores_x, cos_a_scores_y, cos_b_scores_y, eat_score).
-
-    length should match that of directory_labels list.
-    """
-    fig = go.Figure()
-    total_size = len(directory_labels)
-    for i in range(total_size): 
-        X_label, Y_label = directory_labels[i]
-        cos_a_scores_x, cos_b_scores_x, cos_a_scores_y, cos_b_scores_y, _ = data_source[i]
-        fig = scatterplot(fig, X_label, Y_label, cos_a_scores_x, cos_b_scores_x, cos_a_scores_y, cos_b_scores_y)
-
-    my_buttons_list = create_buttons_list(total_size, 4)
-    fig.update_layout(
-    updatemenus=[
-        dict(
-        active=-1,
-        buttons=my_buttons_list,
-    )
-    ])
-    fig.update_layout(
-        title_text="Scatterplot", 
-        xaxis_title="A Similarity Scores",
-        yaxis_title="B Similarity Scores"
-    )
-    return fig
 
 
 layout = dbc.Container(
@@ -503,47 +435,28 @@ def update_output(model_value, scatter_value, numberline_value, a_input, b_input
         X_dir_name, Y_dir_name, Z_dir_name = f'{model_value}/{add_underscore(X_label)}', f'{model_value}/{add_underscore(Y_label)}', f'{model_value}/{add_underscore(Z_label)}'
         x_image_scatter = generate_image_collage(X_dir_name)
         y_image_scatter = generate_image_collage(Y_dir_name)
+        z_image_scatter = generate_image_collage(Z_dir_name)
 
-        if model_value == "sd":
-            cos_a_scores_x, cos_b_scores_x, cos_a_scores_y, cos_b_scores_y, cos_a_scores_z, cos_b_scores_z, scatter_eat_score_x_y, scatter_eat_score_x_z, scatter_eat_score_y_z = process_inputs(text_A, text_B, X_dir_name, Y_dir_name, Z_dir_name)
-            scatter_fig = scatterplot(scatter_fig, X_label, Y_label, cos_a_scores_x, cos_b_scores_x, cos_a_scores_y, cos_b_scores_y, Z_label, cos_a_scores_z, cos_b_scores_z)
-            scatterplot_text = f'A: {text_A}\nB: {text_B}\nX: {X_label}\nY: {Y_label}\nZ: {Z_label}\nEAT F-M = {scatter_eat_score_x_y}\nEAT F-N = {scatter_eat_score_x_z}\nEAT M-N = {scatter_eat_score_y_z}'
-            z_image_scatter = generate_image_collage(Z_dir_name)
-        else:   # vqgan has binary sample images due to compute limits
-            cos_a_scores_x, cos_b_scores_x, cos_a_scores_y, cos_b_scores_y, _, _, scatter_eat_score, _, _ = process_inputs(text_A, text_B, X_dir_name, Y_dir_name)
-            scatter_fig = scatterplot(scatter_fig, X_label, Y_label, cos_a_scores_x, cos_b_scores_x, cos_a_scores_y, cos_b_scores_y)
-            scatter_fig.update_layout(title_text=f'Scatterplot, EAT Score: {scatter_eat_score}')
-            scatterplot_text = f'A: {text_A}\nB: {text_B}\nX: {X_label}\nY: {Y_label}'
+        cos_a_scores_x, cos_b_scores_x, cos_a_scores_y, cos_b_scores_y, cos_a_scores_z, cos_b_scores_z, scatter_eat_score_x_y, scatter_eat_score_x_z, scatter_eat_score_y_z = process_inputs(text_A, text_B, X_dir_name, Y_dir_name, Z_dir_name)
+        scatter_fig = scatterplot(scatter_fig, X_label, Y_label, cos_a_scores_x, cos_b_scores_x, cos_a_scores_y, cos_b_scores_y, Z_label, cos_a_scores_z, cos_b_scores_z)
+        scatterplot_text = f'A: {text_A}\nB: {text_B}\nX: {X_label}\nY: {Y_label}\nZ: {Z_label}\nEAT F-M = {scatter_eat_score_x_y}\nEAT F-N = {scatter_eat_score_x_z}\nEAT M-N = {scatter_eat_score_y_z}'
         
     if numberline_value != -1:
-        X_label, Y_label, Z_label = directory_labels[numberline_value]
-        X_dir_name, Y_dir_name, Z_dir_name = f'{model_value}/{add_underscore(X_label)}', f'{model_value}/{add_underscore(Y_label)}', f'{model_value}/{add_underscore(Z_label)}'
-        x_image_numberline = generate_image_collage(X_dir_name)
-        y_image_numberline = generate_image_collage(Y_dir_name)
-        
-        if model_value == "sd":
-            if scatter_value == numberline_value:   # reuse computed values above from scatterplot generation
-                numberline_fig = number_line(numberline_fig, X_label, Y_label, cos_a_scores_x, cos_b_scores_x, cos_a_scores_y, cos_b_scores_y, Z_label, cos_a_scores_z, cos_b_scores_z)
-                numberline_text = scatterplot_text
-                x_image_numberline, y_image_numberline, z_image_numberline = x_image_scatter, y_image_scatter, z_image_scatter
-                x_image_scatter, y_image_scatter, z_image_scatter = None, None, None   # only need to display once
-            else:
-                cos_a_scores_x, cos_b_scores_x, cos_a_scores_y, cos_b_scores_y, cos_a_scores_z, cos_b_scores_z, numberline_eat_score_x_y, numberline_eat_score_x_z, numberline_eat_score_y_z = process_inputs(text_A, text_B, X_dir_name, Y_dir_name, Z_dir_name)
-                numberline_fig = number_line(numberline_fig, X_label, Y_label, cos_a_scores_x, cos_b_scores_x, cos_a_scores_y, cos_b_scores_y, Z_label, cos_a_scores_z, cos_b_scores_z)
-                numberline_text = f'A: {text_A}\nB: {text_B}\nX: {X_label}\nY: {Y_label}\nZ: {Z_label}\nEAT F-M = {numberline_eat_score_x_y}\nEAT F-N = {numberline_eat_score_x_z}\nEAT M-N = {numberline_eat_score_y_z}'
-                z_image_numberline = generate_image_collage(Z_dir_name)
-        else:   # vqgan has binary sample images due to compute limits
-            if scatter_value == numberline_value:   # reuse computed values above from scatterplot generation
-                numberline_fig = number_line(numberline_fig, X_label, Y_label, cos_a_scores_x, cos_b_scores_x, cos_a_scores_y, cos_b_scores_y)
-                numberline_fig.update_layout(title_text=f'Number Line, EAT Score: {scatter_eat_score}')
-                numberline_text = scatterplot_text
-                x_image_numberline, y_image_numberline, z_image_numberline = x_image_scatter, y_image_scatter, z_image_scatter
-                x_image_scatter, y_image_scatter, z_image_scatter = None, None, None   # only need to display once
-            else:
-                X_label, Y_label, _ = directory_labels[numberline_value]
-                cos_a_scores_x, cos_b_scores_x, cos_a_scores_y, cos_b_scores_y, _, _, numberline_eat_score, _, _ = process_inputs(text_A, text_B, X_dir_name, Y_dir_name)
-                numberline_fig = number_line(numberline_fig, X_label, Y_label, cos_a_scores_x, cos_b_scores_x, cos_a_scores_y, cos_b_scores_y)
-                numberline_fig.update_layout(title_text=f'Number Line, EAT Score: {numberline_eat_score}')
-                numberline_text = f'A: {text_A}\nB: {text_B}\nX: {X_label}\nY: {Y_label}'
+        if scatter_value == numberline_value: 
+            # reuse computed values above from scatterplot generation
+            numberline_fig = number_line(numberline_fig, X_label, Y_label, cos_a_scores_x, cos_b_scores_x, cos_a_scores_y, cos_b_scores_y, Z_label, cos_a_scores_z, cos_b_scores_z)
+            numberline_text = scatterplot_text
+            x_image_numberline, y_image_numberline, z_image_numberline = x_image_scatter, y_image_scatter, z_image_scatter
+            x_image_scatter, y_image_scatter, z_image_scatter = None, None, None   # only need to display one set since they are the same
+        else: 
+            X_label, Y_label, Z_label = directory_labels[numberline_value]
+            X_dir_name, Y_dir_name, Z_dir_name = f'{model_value}/{add_underscore(X_label)}', f'{model_value}/{add_underscore(Y_label)}', f'{model_value}/{add_underscore(Z_label)}'
+            x_image_numberline = generate_image_collage(X_dir_name)
+            y_image_numberline = generate_image_collage(Y_dir_name)
+            z_image_numberline = generate_image_collage(Z_dir_name)
 
+            cos_a_scores_x, cos_b_scores_x, cos_a_scores_y, cos_b_scores_y, cos_a_scores_z, cos_b_scores_z, numberline_eat_score_x_y, numberline_eat_score_x_z, numberline_eat_score_y_z = process_inputs(text_A, text_B, X_dir_name, Y_dir_name, Z_dir_name)
+            numberline_fig = number_line(numberline_fig, X_label, Y_label, cos_a_scores_x, cos_b_scores_x, cos_a_scores_y, cos_b_scores_y, Z_label, cos_a_scores_z, cos_b_scores_z)
+            numberline_text = f'A: {text_A}\nB: {text_B}\nX: {X_label}\nY: {Y_label}\nZ: {Z_label}\nEAT F-M = {numberline_eat_score_x_y}\nEAT F-N = {numberline_eat_score_x_z}\nEAT M-N = {numberline_eat_score_y_z}'
+            
     return scatterplot_text, scatterplot_dropdown_style, scatter_fig, x_image_scatter, y_image_scatter, z_image_scatter, numberline_text, numberline_dropdown_style, numberline_fig, x_image_numberline, y_image_numberline, z_image_numberline
