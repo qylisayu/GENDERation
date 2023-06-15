@@ -10,8 +10,6 @@ from CLIP import clip
 from quantify_bias import get_image_embeddings, scale, calculate_eat_score
 from app_utils import save_uploaded_images, add_underscore, generate_image_collage
 
-# TODO: photo_portrait_of_an_emotional_nonbinary_person missing
-# TODO: MCAS integration (prompts)
 dash.register_page(
     __name__,
     path='/eat-dashboard',
@@ -160,7 +158,7 @@ def scatterplot(figure, X_label, Y_label, cos_a_scores_x, cos_b_scores_x, cos_a_
         name=X_label,
         marker=dict(
             symbol='circle', 
-            color='rgba(0, 0, 255, 0.5)',
+            color='rgba(0, 0, 255, 0.3)',
         )
     )
     y_fig = go.Scatter(
@@ -170,7 +168,7 @@ def scatterplot(figure, X_label, Y_label, cos_a_scores_x, cos_b_scores_x, cos_a_
         name=Y_label,
         marker=dict(
             symbol='circle', 
-            color='rgba(255, 0, 0, 0.5)',
+            color='rgba(255, 0, 0, 0.3)',
         )
     )
     x_mean_fig = go.Scatter(
@@ -207,7 +205,7 @@ def scatterplot(figure, X_label, Y_label, cos_a_scores_x, cos_b_scores_x, cos_a_
             name=Z_label,
             marker=dict(
                 symbol='circle', 
-                color='rgba(0, 255, 0, 0.5)',
+                color='rgba(0, 255, 0, 0.3)',
             )
         )
         z_mean_fig = go.Scatter(

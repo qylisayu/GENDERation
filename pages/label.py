@@ -10,7 +10,6 @@ from CLIP import clip
 from quantify_bias import label_with_clip_embeddings, get_image_embeddings, IIA, ITP, ITA, TTA
 from app_utils import add_underscore, save_uploaded_images, generate_image_collage
 
-# TODO: add table description/caption for the labor stats table
 labor_stats = {'doctor': 43.8, 'nurse': 87.9, 'manager': 40.5, 'programmer': 22.1, 'financial analyst': 40.2, 'professor': 48.4}
 num_classes = 10
 options_menu = [
@@ -32,9 +31,9 @@ model, preprocess = clip.load("ViT-B/32", device=device, jit=False)
 
 text_A = "he, him, his, man, male, boy, father, son, husband, brother"
 text_B = "she, her, hers, woman, female, girl, mother, daughter, wife, sister"
-# TODO: add these in with lisa's generated image sets
-A_dir_name = "sd/photo_portrait_of_a_male_doctor" # "male_attributes"
-B_dir_name = "sd/photo_portrait_of_a_female_doctor" # "female_attributes"
+# TODO: saw clear sexualization and nudity for female_attributes images
+A_dir_name = "male_attributes"
+B_dir_name = "female_attributes"
 
 # Encode the text attributes
 with torch.no_grad():
@@ -100,12 +99,19 @@ layout = html.Div([
     dbc.Row(
         [
             dbc.Col(
-                dash_table.DataTable(
-                    id="professions-table", 
-                    style_cell={'textAlign': 'center'},
-                    style_header={'backgroundColor': 'rgb(230, 230, 230)', 'fontWeight': 'bold'},
-                ),
-                style={'width': '25%', 'margin-left': '10px'},
+                [
+                    html.Div([
+                        '2022 U.S. Labor Force Statistics ',
+                        html.A('(view source)', href='https://www.bls.gov/cps/cpsaat11.htm', className="link-text")
+                    ], className="display-text", style={'margin-bottom': '10px'}),
+                    dash_table.DataTable(
+                        id="professions-table", 
+                        style_cell={'textAlign': 'center'},
+                        style_header={'backgroundColor': 'rgb(230, 230, 230)', 'fontWeight': 'bold'},
+                    ),
+                    dbc.Row(html.Div(id='mcas-output', className='display-text'), className='outlined-div')
+                ],
+                style={'width': '25%', 'margin-left': '10px'}
             ),
             dbc.Col(
                 dcc.Graph(id="histogram"),
@@ -122,6 +128,7 @@ layout = html.Div([
     Output('professions-table', 'data'),
     Output('histogram', 'figure'), 
     Output('image-collage', 'children'),
+    Output('mcas-output', 'children'),
     Input('model-dropdown', 'value'),
     Input('theme-dropdown', 'value'),
     Input('upload-image', 'contents'),
@@ -144,12 +151,14 @@ def update_output(model_value, theme_value, contents):
         xaxis_range=[1, num_classes],
     )
 
+    mcas = "Select settings to view MCAS"
     if model_value == '-1' or (model_value == 'upload' and contents is None) or (model_value == 'sd' and theme_value == '-1'):
-        return labor_stats_table, fig, None
+        return labor_stats_table, fig, None, mcas
     
     if model_value == 'upload' and contents is not None:
         image_dir_name = model_value
         save_uploaded_images(contents, image_dir_name)
+        mcas = "MCAS unavailable for selected settings"
     else:
         image_dir_name = f'{model_value}/{add_underscore(theme_value)}'
         text_prompt = theme_value
@@ -166,8 +175,8 @@ def update_output(model_value, theme_value, contents):
         itaas = ITA(gen_targets, text_attributes_A, text_attributes_B)
         ttas = TTA(text_target, text_attributes_A, text_attributes_B)
 
-        MCAS = iias + itpas + itaas + ttas
-        print(f'MCAS: {MCAS}')
+        mcas = iias + itpas + itaas + ttas
+        mcas = f'MCAS: {mcas:.2f}'
     
     counts = label_with_clip_embeddings(image_dir_name, clip_model, clip_processor, num_classes)
     feminine_proportion = sum(counts[:4]) / sum(counts)
@@ -175,4 +184,4 @@ def update_output(model_value, theme_value, contents):
     fig.update_layout(title_text=f'Histogram, Feminine Percentage: {round(feminine_proportion * 100, 2)}% ({sum(counts[:4])}/{sum(counts)})')
     image_collage = generate_image_collage(image_dir_name)
 
-    return labor_stats_table, fig, image_collage
+    return labor_stats_table, fig, image_collage, mcas

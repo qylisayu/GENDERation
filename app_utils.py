@@ -2,7 +2,6 @@ import os
 import shutil
 import base64
 from dash import html
-import math
 
 def add_underscore(string_to_modify):
     return str.replace(string_to_modify, ' ', '_')
