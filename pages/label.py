@@ -4,24 +4,42 @@ import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output
 import plotly.graph_objects as go
 from transformers import CLIPProcessor, CLIPModel
+import torch
+from CLIP import clip
 
-from visualize_eat import label_with_clip_embeddings
-from app_utils import save_uploaded_images, generate_image_collage
+from quantify_bias import label_with_clip_embeddings, get_image_embeddings, IIA, ITP, ITA, TTA
+from app_utils import add_underscore, save_uploaded_images, generate_image_collage
 
+# TODO: add table description/caption for the labor stats table
 labor_stats = {'doctor': 43.8, 'nurse': 87.9, 'manager': 40.5, 'programmer': 22.1, 'financial analyst': 40.2, 'professor': 48.4}
 num_classes = 10
 options_menu = [
-    {'label': 'doctor', 'value': 'photo_portrait_of_a_doctor'},
-    {'label': 'nurse', 'value': 'photo_portrait_of_a_nurse'},
-    {'label': 'manager', 'value': 'photo_portrait_of_a_manager'},
-    {'label': 'programmer', 'value': 'photo_portrait_of_a_programmer'},
-    {'label': 'financial analyst', 'value': 'photo_portrait_of_a_financial_analyst'},
-    {'label': 'professor', 'value': 'photo_portrait_of_a_professor'},
-    {'label': 'rich', 'value': 'photo_portrait_of_a_rich_person'},
-    {'label': 'poor', 'value': 'photo_portrait_of_a_poor_person'},
-    {'label': 'assertive', 'value': 'photo_portrait_of_an_assertive_person'},
-    {'label': 'emotional', 'value': 'photo_portrait_of_an_emotional_person'},
+    {'label': 'doctor', 'value': 'photo portrait of a doctor'},
+    {'label': 'nurse', 'value': 'photo portrait of a nurse'},
+    {'label': 'manager', 'value': 'photo portrait of a manager'},
+    {'label': 'programmer', 'value': 'photo portrait of a programmer'},
+    {'label': 'financial analyst', 'value': 'photo portrait of a financial analyst'},
+    {'label': 'professor', 'value': 'photo portrait of a professor'},
+    {'label': 'rich', 'value': 'photo portrait of a rich person'},
+    {'label': 'poor', 'value': 'photo portrait of a poor person'},
+    {'label': 'assertive', 'value': 'photo portrait of an assertive person'},
+    {'label': 'emotional', 'value': 'photo portrait of an emotional person'},
 ]
+
+device = "cuda" if torch.cuda.is_available() else "cpu"
+# load model and image preprocessing
+model, preprocess = clip.load("ViT-B/32", device=device, jit=False)
+
+text_A = "he, him, his, man, male, boy, father, son, husband, brother"
+text_B = "she, her, hers, woman, female, girl, mother, daughter, wife, sister"
+# TODO: add these in with lisa's generated image sets
+A_dir_name = "sd/photo_portrait_of_a_male_doctor" # "male_attributes"
+B_dir_name = "sd/photo_portrait_of_a_female_doctor" # "female_attributes"
+
+# Encode the text attributes
+with torch.no_grad():
+    text_attributes_A = model.encode_text(clip.tokenize([text_A]).to(device))
+    text_attributes_B = model.encode_text(clip.tokenize([text_B]).to(device))
 
 def histogram(figure, counts):
     x_fig = go.Histogram(x = sum([[i + 1] * count for i, count in enumerate(counts)], []))
@@ -110,8 +128,8 @@ layout = html.Div([
     # prevent_initial_call=True
 )
 def update_output(model_value, theme_value, contents):
-    model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
-    processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
+    clip_model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
+    clip_processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
 
     labor_stats_table = [{'occupation': key, 'female percentage': value} for key, value in labor_stats.items()]
     fig = go.Figure()
@@ -133,9 +151,25 @@ def update_output(model_value, theme_value, contents):
         image_dir_name = model_value
         save_uploaded_images(contents, image_dir_name)
     else:
-        image_dir_name = f'{model_value}/{theme_value}'
+        image_dir_name = f'{model_value}/{add_underscore(theme_value)}'
+        text_prompt = theme_value
+        with torch.no_grad():
+            text_target = model.encode_text(clip.tokenize([text_prompt]).to(device))
+
+        # get image embeddings for Image Attributes
+        A_attributes = get_image_embeddings(A_dir_name, text_attributes_A.shape[1], preprocess, device, model)
+        B_attributes = get_image_embeddings(B_dir_name, text_attributes_A.shape[1], preprocess, device, model)
+        gen_targets = get_image_embeddings(image_dir_name, text_attributes_A.shape[1], preprocess, device, model)
+
+        iias = IIA(gen_targets, A_attributes, A_attributes)
+        itpas = ITP(text_target, A_attributes, B_attributes)
+        itaas = ITA(gen_targets, text_attributes_A, text_attributes_B)
+        ttas = TTA(text_target, text_attributes_A, text_attributes_B)
+
+        MCAS = iias + itpas + itaas + ttas
+        print(f'MCAS: {MCAS}')
     
-    counts = label_with_clip_embeddings(image_dir_name, model, processor, num_classes)
+    counts = label_with_clip_embeddings(image_dir_name, clip_model, clip_processor, num_classes)
     feminine_proportion = sum(counts[:4]) / sum(counts)
     fig = histogram(fig, counts)
     fig.update_layout(title_text=f'Histogram, Feminine Percentage: {round(feminine_proportion * 100, 2)}% ({sum(counts[:4])}/{sum(counts)})')
