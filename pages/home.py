@@ -25,4 +25,14 @@ layout = html.Div(
             ],
             className='button-link',
         ),
+        dbc.Col(
+            [
+                dcc.Link(
+                    html.Button('GENDERation Report Website', className='button'),
+                    href='https://genderation.github.io/',
+                    target='_blank',
+                ),
+            ],
+            className='button-link',
+        ),
     ], className='button-container')

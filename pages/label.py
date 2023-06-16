@@ -41,7 +41,12 @@ with torch.no_grad():
     text_attributes_B = model.encode_text(clip.tokenize([text_B]).to(device))
 
 def histogram(figure, counts):
-    x_fig = go.Histogram(x = sum([[i + 1] * count for i, count in enumerate(counts)], []))
+    freq_counts = []
+    for i in range(len(counts)):
+        freq_counts += [i + 1] * counts[i]
+
+    x_values = list(range(1, len(counts) + 1))
+    x_fig = go.Histogram(x=freq_counts, xbins=dict(start=min(x_values), end=max(x_values), size=1))
     figure.add_trace(x_fig)
     return figure
 
