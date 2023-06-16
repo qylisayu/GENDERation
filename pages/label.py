@@ -56,7 +56,7 @@ dash.register_page(
     title='Label Dashboard',
     name='Label Dashboard'
 )
-layout = html.Div([
+layout = dbc.Container([
     dcc.Link(
         html.Button('Go Home', className='button'),
         href='/',
@@ -86,6 +86,7 @@ layout = html.Div([
                 ),
                 style={'width': '100%'},
             ),
+            dbc.Col(style={'width': '1%'}),
             dbc.Col(
                 dcc.Upload(
                     id='upload-image',
@@ -107,16 +108,16 @@ layout = html.Div([
                 [
                     html.Div([
                         '2022 U.S. Labor Force Statistics ',
-                        html.A('(view source)', href='https://www.bls.gov/cps/cpsaat11.htm', className="link-text")
-                    ], className="display-text", style={'margin-bottom': '10px'}),
+                        html.A('(view source)', href='https://www.bls.gov/cps/cpsaat11.htm', className="display-text-white")
+                    ], className="display-text-white", style={'margin-bottom': '10px', 'margin-left': '7px'}),
                     dash_table.DataTable(
                         id="professions-table", 
                         style_cell={'textAlign': 'center'},
                         style_header={'backgroundColor': 'rgb(230, 230, 230)', 'fontWeight': 'bold'},
                     ),
-                    dbc.Row(html.Div(id='mcas-output', className='display-text'), className='outlined-div')
+                    dbc.Row(html.Div(id='mcas-output', className='display-text-white'), className='outlined-div')
                 ],
-                style={'width': '25%', 'margin-left': '10px'}
+                style={'width': '25%', 'margin-right': '10px'}
             ),
             dbc.Col(
                 dcc.Graph(id="histogram"),
@@ -124,11 +125,12 @@ layout = html.Div([
             ),
         ],
         className="row-container-custom-dist",
+        style={'margin-top': '7%', 'margin-bottom': '7%'},
     ),
     dbc.Row(
         html.Div(id='image-collage'),
     ),
-])
+], className='padding-container')
 @callback(
     Output('professions-table', 'data'),
     Output('histogram', 'figure'), 

@@ -249,6 +249,7 @@ layout = dbc.Container(
                     id='text-input-a', type='text', placeholder='Enter Text A',
                     className='text-input', 
                 ),
+                dbc.Col(style={'width': '1%'}),
                 dcc.Input(
                     id='text-input-b', type='text', placeholder='Enter Text B', 
                     className='text-input', 
@@ -270,6 +271,7 @@ layout = dbc.Container(
                     ),
                     style={'width': '100%'},
                 ),
+                dbc.Col(style={'width': '1%'}),
                 dbc.Col(
                     dcc.Upload(
                         id='upload-image-y',
@@ -298,7 +300,7 @@ layout = dbc.Container(
                         ),
                         html.P(id='scatterplot-text', className="display-text-wrap"),
                     ],
-                    style={'width': '25%'}
+                    style={'width': '25%', 'margin-right': '10px'},
                 ),
                 dcc.Graph(id="scatterplots", style={'width': '75%'})
             ],
@@ -325,7 +327,7 @@ layout = dbc.Container(
                         ),
                         html.P(id='numberline-text', className="display-text-wrap"),
                     ],
-                    style={'width': '25%'}
+                    style={'width': '25%', 'margin-right': '10px'},
                 ),
                 dcc.Graph(id="number-line", style={'width': '75%'}),
             ],
@@ -340,7 +342,7 @@ layout = dbc.Container(
             className="row-container-even-dist",
         ),
     ],
-    fluid=True
+    className='padding-container',
 )
 @callback(
     Output('scatterplot-text', 'children'),

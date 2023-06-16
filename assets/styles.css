@@ -1,6 +1,6 @@
 .button {
-    background-color: #007BFF;
-    color: white;
+    background-color: white;
+    color: purple;
     border: none;
     padding: 10px 20px;
     border-radius: 5px;
@@ -8,6 +8,7 @@
     cursor: pointer;
     width: 100%;
     font-family: system-ui;
+    font-weight: bold;
 }
 
 .button-container {
@@ -23,7 +24,7 @@
     width: 100%;
     margin-left: 10px; 
     margin-right: 10px; 
-    margin-top: 23%;
+    margin-bottom: 23%;
 }
 
 .dropdown-container {
@@ -72,12 +73,17 @@
 }
 
 .link-text {
-    color: #007BFF;
+    color: purple;
     font-family: system-ui;
 }
 
 .display-text {
     font-family: system-ui;
+}
+
+.display-text-white {
+    font-family: system-ui;
+    color: white;
 }
 
 .display-text-wrap {
@@ -92,7 +98,11 @@
 }
 
 .outlined-div {
-    border: 1px solid black;
+    border: 1px solid white;
     padding: 10px;
     margin-top: 35px;
+}
+
+.padding-container {
+    padding: 10px 10px 10px 10px;
 }
