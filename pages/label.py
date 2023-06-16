@@ -46,7 +46,7 @@ def histogram(figure, counts):
         freq_counts += [i + 1] * counts[i]
 
     x_values = list(range(1, len(counts) + 1))
-    x_fig = go.Histogram(x=freq_counts, xbins=dict(start=min(x_values), end=max(x_values), size=1))
+    x_fig = go.Histogram(x=freq_counts, xbins=dict(start=min(x_values) - 0.5, end=max(x_values) + 0.5, size=1))
     figure.add_trace(x_fig)
     return figure
 
@@ -183,8 +183,13 @@ def update_output(model_value, theme_value, contents):
         ttas = TTA(text_target, text_attributes_A, text_attributes_B)
 
         mcas = iias + itpas + itaas + ttas
-        mcas = f'MCAS: {mcas:.2f}'
-    
+        if mcas < 0:
+            mcas = f'MCAS: {mcas:.2f}, Feminine-leaning'
+        elif mcas == 0:
+            mcas = f'MCAS: {mcas:.2f}, No gender leanings'
+        else:
+            mcas = f'MCAS: {mcas:.2f}, Masculine-leaning'
+
     counts = label_with_clip_embeddings(image_dir_name, clip_model, clip_processor, num_classes)
     feminine_proportion = sum(counts[:4]) / sum(counts)
     fig = histogram(fig, counts)

@@ -298,7 +298,7 @@ layout = dbc.Container(
                             placeholder="Select a theme",
                             className="dropdown-container",
                         ),
-                        html.P(id='scatterplot-text', className="display-text-wrap"),
+                        html.P(id='scatterplot-text', className="display-text-wrap-white"),
                     ],
                     style={'width': '25%', 'margin-right': '10px'},
                 ),
@@ -325,7 +325,7 @@ layout = dbc.Container(
                             placeholder="Select a theme",
                             className="dropdown-container",
                         ),
-                        html.P(id='numberline-text', className="display-text-wrap"),
+                        html.P(id='numberline-text', className="display-text-wrap-white"),
                     ],
                     style={'width': '25%', 'margin-right': '10px'},
                 ),
@@ -437,7 +437,7 @@ def update_output(model_value, scatter_value, numberline_value, a_input, b_input
 
         cos_a_scores_x, cos_b_scores_x, cos_a_scores_y, cos_b_scores_y, cos_a_scores_z, cos_b_scores_z, scatter_eat_score_x_y, scatter_eat_score_x_z, scatter_eat_score_y_z = process_inputs(text_A, text_B, X_dir_name, Y_dir_name, Z_dir_name)
         scatter_fig = scatterplot(scatter_fig, X_label, Y_label, cos_a_scores_x, cos_b_scores_x, cos_a_scores_y, cos_b_scores_y, Z_label, cos_a_scores_z, cos_b_scores_z)
-        scatterplot_text = f'A: {text_A}\nB: {text_B}\nX: {X_label}\nY: {Y_label}\nZ: {Z_label}\nEAT F-M = {scatter_eat_score_x_y:.2f}\nEAT F-N = {scatter_eat_score_x_z:.2f}\nEAT M-N = {scatter_eat_score_y_z:.2f}'
+        scatterplot_text = f'A: {text_A}\nB: {text_B}\nX: {X_label}\nY: {Y_label}\nZ: {Z_label}\n\nEAT F-M = {scatter_eat_score_x_y:.2f}\nEAT F-N = {scatter_eat_score_x_z:.2f}\nEAT M-N = {scatter_eat_score_y_z:.2f}'
         
     if numberline_value != -1:
         if scatter_value == numberline_value: 
@@ -455,6 +455,6 @@ def update_output(model_value, scatter_value, numberline_value, a_input, b_input
 
             cos_a_scores_x, cos_b_scores_x, cos_a_scores_y, cos_b_scores_y, cos_a_scores_z, cos_b_scores_z, numberline_eat_score_x_y, numberline_eat_score_x_z, numberline_eat_score_y_z = process_inputs(text_A, text_B, X_dir_name, Y_dir_name, Z_dir_name)
             numberline_fig = number_line(numberline_fig, X_label, Y_label, cos_a_scores_x, cos_b_scores_x, cos_a_scores_y, cos_b_scores_y, Z_label, cos_a_scores_z, cos_b_scores_z)
-            numberline_text = f'A: {text_A}\nB: {text_B}\nX: {X_label}\nY: {Y_label}\nZ: {Z_label}\nEAT F-M = {numberline_eat_score_x_y:.2f}\nEAT F-N = {numberline_eat_score_x_z:.2f}\nEAT M-N = {numberline_eat_score_y_z:.2f}'
+            numberline_text = f'A: {text_A}\nB: {text_B}\nX: {X_label}\nY: {Y_label}\nZ: {Z_label}\n\nEAT F-M = {numberline_eat_score_x_y:.2f}\nEAT F-N = {numberline_eat_score_x_z:.2f}\nEAT M-N = {numberline_eat_score_y_z:.2f}'
             
     return scatterplot_text, scatterplot_dropdown_style, scatter_fig, x_image_scatter, y_image_scatter, z_image_scatter, numberline_text, numberline_dropdown_style, numberline_fig, x_image_numberline, y_image_numberline, z_image_numberline

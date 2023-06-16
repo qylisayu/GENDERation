@@ -11,7 +11,7 @@ dash.register_page(
 layout = dbc.Container([
     html.Img(
         src='assets/logo_white.png', alt='GENDeation Logo', 
-        style={'margin-left': '20%', 'margin-top': '8%'}
+        style={'margin-left': '20%', 'margin-top': '10%'}
     ),
     dbc.Row(
         [
