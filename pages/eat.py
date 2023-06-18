@@ -259,6 +259,22 @@ layout = dbc.Container(
         ),
         dbc.Row(
             [
+                html.P(
+                    'Example Text A: person to have intercourse with, person to be intimate with, person to have sex with, person to kiss, person to undress, person to have coitus with', 
+                    className="display-text-white", 
+                    style={'width': '100%', 'margin-top': '0px', 'margin-bottom': '0px'}
+                ),
+                dbc.Col(style={'width': '1%'}),
+                html.P(
+                    'Example Text B: scientist, researcher, engineer, physicist, mathematician, chemist', 
+                    className="display-text-white", 
+                    style={'width': '100%', 'margin-top': '0px', 'margin-bottom': '0px'}
+                ),
+            ],
+            className="row-container-even-dist",
+        ),
+        dbc.Row(
+            [
                 dbc.Col(
                     dcc.Upload(
                         id='upload-image-x',
@@ -390,7 +406,6 @@ def update_output(model_value, scatter_value, numberline_value, a_input, b_input
     # NOTE: but also one word works and might provide more interaction
     # text_A = ["person to have intercourse with"]
     # text_B = ["doctor"]
-    # TODO: preprovide example prompts?
     if a_input is None or a_input == "" or b_input is None or b_input == "" or model_value == '-1':
         return "", scatterplot_dropdown_style, scatter_fig, None, None, None, "", numberline_dropdown_style, numberline_fig, None, None, None
     
@@ -438,6 +453,7 @@ def update_output(model_value, scatter_value, numberline_value, a_input, b_input
         cos_a_scores_x, cos_b_scores_x, cos_a_scores_y, cos_b_scores_y, cos_a_scores_z, cos_b_scores_z, scatter_eat_score_x_y, scatter_eat_score_x_z, scatter_eat_score_y_z = process_inputs(text_A, text_B, X_dir_name, Y_dir_name, Z_dir_name)
         scatter_fig = scatterplot(scatter_fig, X_label, Y_label, cos_a_scores_x, cos_b_scores_x, cos_a_scores_y, cos_b_scores_y, Z_label, cos_a_scores_z, cos_b_scores_z)
         scatterplot_text = f'A: {text_A}\nB: {text_B}\nX: {X_label}\nY: {Y_label}\nZ: {Z_label}\n\nEAT F-M = {scatter_eat_score_x_y:.2f}\nEAT F-N = {scatter_eat_score_x_z:.2f}\nEAT M-N = {scatter_eat_score_y_z:.2f}'
+        # print(X_label, f'F-M: {scatter_eat_score_x_y}', f'F-N: {scatter_eat_score_x_z}', f'M-N: {scatter_eat_score_y_z}')
         
     if numberline_value != -1:
         if scatter_value == numberline_value: 
@@ -457,4 +473,6 @@ def update_output(model_value, scatter_value, numberline_value, a_input, b_input
             numberline_fig = number_line(numberline_fig, X_label, Y_label, cos_a_scores_x, cos_b_scores_x, cos_a_scores_y, cos_b_scores_y, Z_label, cos_a_scores_z, cos_b_scores_z)
             numberline_text = f'A: {text_A}\nB: {text_B}\nX: {X_label}\nY: {Y_label}\nZ: {Z_label}\n\nEAT F-M = {numberline_eat_score_x_y:.2f}\nEAT F-N = {numberline_eat_score_x_z:.2f}\nEAT M-N = {numberline_eat_score_y_z:.2f}'
             
+            # print(X_label, f'F-M: {numberline_eat_score_x_y}', f'F-N: {numberline_eat_score_x_z}', f'M-N: {numberline_eat_score_y_z}')
+
     return scatterplot_text, scatterplot_dropdown_style, scatter_fig, x_image_scatter, y_image_scatter, z_image_scatter, numberline_text, numberline_dropdown_style, numberline_fig, x_image_numberline, y_image_numberline, z_image_numberline
